@@ -34,21 +34,26 @@ export default function Home() {
     fetchCoins();
   }, []);
 
-  const handleSearch = (e) => {
-    const query = e.target.value.toLowerCase();
-    setSearch(query);
+const handleSearch = (e) => {
+  const query = e.target.value.toLowerCase();
+  setSearch(query);
 
-    if (query.length > 0) {
-      const filteredCoins = coins.filter(
-        (c) =>
-          (c.symbol && c.symbol.toLowerCase().includes(query)) ||
-          (c.name && c.name.toLowerCase().includes(query))
-      );
-      setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
-    } else {
-      setFiltered([]);
-    }
-  };
+  // ✅ Don’t run if no coins yet or input is empty
+  if (!coins.length || !query) {
+    setFiltered([]);
+    return;
+  }
+
+  // ✅ Safe filtering — avoids .toLowerCase() crashes
+  const filteredCoins = coins.filter((c) => {
+    const sym = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
+    const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
+    return sym.includes(query) || name.includes(query);
+  });
+
+  setFiltered(filteredCoins.slice(0, 20)); // limit results
+};
+
 
   const handleSelect = (coin) => {
     setSearch(coin.symbol);
