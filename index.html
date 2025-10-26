@@ -19,22 +19,18 @@
   <div id="output"></div>
 
   <script>
+    const API_BASE = "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
     let listings = [];
 
-    // 🔹 1. Fetch the data once when the page loads
     async function loadData() {
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbwuKirWMqW7_xav3tZ04zoGVgbzeczzB6ER-BfqGAH24F6bn4rVC8uBXgEvp65LhAHz/exec");
-        listings = await res.json();
-        console.log("✅ Listings loaded:", listings.length);
-      } catch (err) {
-        console.error("❌ Error loading data:", err);
-      }
+      const res = await fetch(API_BASE);
+      listings = await res.json();
+      console.log("✅ Loaded", listings.length, "coins");
     }
 
-    // 🔹 2. Run search once data is loaded
     document.addEventListener("DOMContentLoaded", async () => {
       await loadData();
+
       const search = document.getElementById('search');
       const results = document.getElementById('results');
       const output = document.getElementById('output');
@@ -45,24 +41,34 @@
         output.innerHTML = '';
         if (!q) return;
 
-        // Safe filtering
         const matches = listings
-          .filter(c => c.symbol && typeof c.symbol === 'string' && c.symbol.toLowerCase().includes(q))
+          .filter(c => c.symbol && c.symbol.toLowerCase().includes(q))
           .slice(0, 10);
 
         if (!matches.length) {
-          results.innerHTML = '<li style="color: #888;">No results found</li>';
+          results.innerHTML = '<li style="color:#888;">No results</li>';
           return;
         }
 
         matches.forEach(c => {
           const li = document.createElement('li');
           li.textContent = `${c.symbol} — ${c.name}`;
-          li.onclick = () => {
-            search.value = '';
+          li.onclick = async () => {
             results.innerHTML = '';
-            output.innerHTML = `<h2>${c.name} (${c.symbol})</h2>
-              <p style="font-size:24px">$${Number(c.price_usd).toLocaleString()}</p>`;
+            search.value = c.symbol;
+
+            // fetch live data for selected symbol
+            const liveRes = await fetch(`${API_BASE}?symbol=${c.symbol}`);
+            const liveData = await liveRes.json();
+
+            if (liveData.length) {
+              const coin = liveData[0];
+              output.innerHTML = `
+                <h2>${coin.name} (${coin.symbol})</h2>
+                <p style="font-size:24px;">$${Number(coin.price_usd).toLocaleString()}</p>`;
+            } else {
+              output.innerHTML = `<p>No live data for ${c.symbol}</p>`;
+            }
           };
           results.appendChild(li);
         });
