@@ -1,46 +1,59 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 export default function Home() {
   const [coins, setCoins] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const router = useRouter();
 
-  const API_BASE = "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
+  const API_BASE =
+    "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
 
   useEffect(() => {
     async function fetchCoins() {
       try {
         const res = await fetch(API_BASE);
-        const data = await res.json();
-        setCoins(data);
+        const text = await res.text();
+
+        // Handle plain-text or malformed JSON responses gracefully
+        const json = JSON.parse(
+          text.startsWith("[") ? text : `[${text}]`
+        );
+
+        if (Array.isArray(json)) {
+          setCoins(json);
+        } else {
+          console.error("Unexpected data:", json);
+        }
       } catch (err) {
         console.error("Failed to fetch coin list:", err);
       }
     }
+
     fetchCoins();
   }, []);
 
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearch(query);
+
     if (query.length > 0) {
-      setFiltered(
-        coins.filter(
-          (c) =>
-            c.symbol.toLowerCase().includes(query) ||
-            c.name.toLowerCase().includes(query)
-        )
+      const filteredCoins = coins.filter(
+        (c) =>
+          (c.symbol && c.symbol.toLowerCase().includes(query)) ||
+          (c.name && c.name.toLowerCase().includes(query))
       );
+      setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
     } else {
       setFiltered([]);
     }
   };
 
   const handleSelect = (coin) => {
-    setSelected(coin);
-    setFiltered([]);
     setSearch(coin.symbol);
+    setFiltered([]);
+    router.push(`/coins/${coin.symbol}`); // Redirect to coin page
   };
 
   return (
@@ -56,7 +69,7 @@ export default function Home() {
       <h1>💰 Crypto Search</h1>
       <input
         type="text"
-        placeholder="Search coin symbol..."
+        placeholder="Search for a coin..."
         value={search}
         onChange={handleSearch}
         style={{
@@ -93,20 +106,6 @@ export default function Home() {
               <strong>{coin.symbol}</strong> — {coin.name}
             </div>
           ))}
-        </div>
-      )}
-
-      {selected && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>
-            {selected.name} ({selected.symbol})
-          </h2>
-          <p style={{ fontSize: "20px" }}>
-            💵 {Number(selected.price_usd).toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            })}
-          </p>
         </div>
       )}
     </main>
