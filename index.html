@@ -9,6 +9,7 @@
     ul { list-style: none; padding: 0; margin: 10px auto; max-width: 300px; text-align: left; border: 1px solid #ccc; border-radius: 4px; }
     li { padding: 8px; cursor: pointer; }
     li:hover { background: #f2f2f2; }
+    #output h2 { margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -19,29 +20,52 @@
 
   <script>
     let listings = [];
-    // Fetch data from your Apps Script endpoint
-    fetch("https://script.google.com/macros/s/AKfycbwuKirWMqW7_xav3tZ04zoGVgbzeczzB6ER-BfqGAH24F6bn4rVC8uBXgEvp65LhAHz/exec")
-      .then(res => res.json())
-      .then(data => listings = data);
 
-    const search = document.getElementById('search');
-    const results = document.getElementById('results');
-    const output = document.getElementById('output');
+    // 🔹 1. Fetch the data once when the page loads
+    async function loadData() {
+      try {
+        const res = await fetch("https://script.google.com/macros/s/AKfycbwuKirWMqW7_xav3tZ04zoGVgbzeczzB6ER-BfqGAH24F6bn4rVC8uBXgEvp65LhAHz/exec");
+        listings = await res.json();
+        console.log("✅ Listings loaded:", listings.length);
+      } catch (err) {
+        console.error("❌ Error loading data:", err);
+      }
+    }
 
-    search.addEventListener('input', () => {
-      const q = search.value.toLowerCase();
-      results.innerHTML = '';
-      if (!q) return;
-      const matches = listings.filter(c => c.symbol.toLowerCase().includes(q)).slice(0, 10);
-      matches.forEach(c => {
-        const li = document.createElement('li');
-        li.textContent = `${c.symbol} — ${c.name}`;
-        li.onclick = () => {
-          search.value = '';
-          results.innerHTML = '';
-          output.innerHTML = `<h2>${c.name} (${c.symbol})</h2><p style="font-size:24px">$${Number(c.price_usd).toLocaleString()}</p>`;
-        };
-        results.appendChild(li);
+    // 🔹 2. Run search once data is loaded
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadData();
+      const search = document.getElementById('search');
+      const results = document.getElementById('results');
+      const output = document.getElementById('output');
+
+      search.addEventListener('input', () => {
+        const q = search.value.trim().toLowerCase();
+        results.innerHTML = '';
+        output.innerHTML = '';
+        if (!q) return;
+
+        // Safe filtering
+        const matches = listings
+          .filter(c => c.symbol && typeof c.symbol === 'string' && c.symbol.toLowerCase().includes(q))
+          .slice(0, 10);
+
+        if (!matches.length) {
+          results.innerHTML = '<li style="color: #888;">No results found</li>';
+          return;
+        }
+
+        matches.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = `${c.symbol} — ${c.name}`;
+          li.onclick = () => {
+            search.value = '';
+            results.innerHTML = '';
+            output.innerHTML = `<h2>${c.name} (${c.symbol})</h2>
+              <p style="font-size:24px">$${Number(c.price_usd).toLocaleString()}</p>`;
+          };
+          results.appendChild(li);
+        });
       });
     });
   </script>
