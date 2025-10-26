@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Crypto Search</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+    input { width: 300px; padding: 10px; font-size: 16px; }
+    ul { list-style: none; padding: 0; margin: 10px auto; max-width: 300px; text-align: left; border: 1px solid #ccc; border-radius: 4px; }
+    li { padding: 8px; cursor: pointer; }
+    li:hover { background: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>Crypto Search</h1>
+  <input type="text" id="search" placeholder="Type ticker (e.g. BTC)">
+  <ul id="results"></ul>
+  <div id="output"></div>
+
+  <script>
+    let listings = [];
+    // Fetch data from your Apps Script endpoint
+    fetch("https://script.google.com/macros/s/PASTE_YOUR_SCRIPT_ID/exec")
+      .then(res => res.json())
+      .then(data => listings = data);
+
+    const search = document.getElementById('search');
+    const results = document.getElementById('results');
+    const output = document.getElementById('output');
+
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase();
+      results.innerHTML = '';
+      if (!q) return;
+      const matches = listings.filter(c => c.symbol.toLowerCase().includes(q)).slice(0, 10);
+      matches.forEach(c => {
+        const li = document.createElement('li');
+        li.textContent = `${c.symbol} — ${c.name}`;
+        li.onclick = () => {
+          search.value = '';
+          results.innerHTML = '';
+          output.innerHTML = `<h2>${c.name} (${c.symbol})</h2><p style="font-size:24px">$${Number(c.price_usd).toLocaleString()}</p>`;
+        };
+        results.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
