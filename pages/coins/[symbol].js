@@ -8,7 +8,7 @@ export default function CoinPage() {
 
   useEffect(() => {
     if (!symbol) return;
-    fetch(`https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?symbol=${symbol}`)
+    fetch(`https://script.google.com/macros/s/AKfycbzUhRQ9Cx7QWQJNouRPGd5lfMbjlL7DxtPhl-n0Y1bcoJ2OkE1N5-1WmejTXFv_NzXh/exec?symbol=${symbol}`)
       .then(res => res.json())
       .then(setCoin)
       .catch(console.error);
