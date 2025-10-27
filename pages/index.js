@@ -8,7 +8,6 @@ export default function CryptoSearch() {
 
   const API_URL = 'https://script.google.com/macros/s/AKfycbzY1t4l6Osq7CQf8v5kwtvPnuWfBl1-GzD-KXz3LUl1zD_qyQVUa9T9o1LCzoOO3caP/exec';
 
-  // Fetch all coins on mount
   useEffect(() => {
     fetchAllCoins();
   }, []);
@@ -46,7 +45,6 @@ export default function CryptoSearch() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Crypto Search</h1>
       
-      {/* Search Input */}
       <input
         type="text"
         placeholder="Search by name or symbol..."
@@ -55,7 +53,6 @@ export default function CryptoSearch() {
         className="w-full p-3 border rounded-lg mb-6"
       />
 
-      {/* Search Results */}
       {!selectedCoin && (
         <div className="space-y-2">
           {filteredCoins.slice(0, 20).map((coin) => (
@@ -76,17 +73,15 @@ export default function CryptoSearch() {
         </div>
       )}
 
-      {/* Selected Coin Summary */}
       {selectedCoin && !loading && (
         <div className="space-y-6">
           <button
             onClick={() => setSelectedCoin(null)}
             className="text-blue-600 hover:underline mb-4"
           >
-            &lt; Back to search
+            Back to search
           </button>
 
-          {/* Coin Header */}
           <div className="border rounded-lg p-6 bg-white shadow-sm">
             <div className="flex items-center gap-4 mb-4">
               {selectedCoin.logo && (
@@ -106,7 +101,7 @@ export default function CryptoSearch() {
               href={`/coins/${selectedCoin.symbol.toLowerCase()}`}
               className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
-              View Full Details &gt;
+              View Full Details
             </a>
           </div>
         </div>
