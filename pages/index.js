@@ -9,7 +9,7 @@ export default function Home() {
   const timeoutRef = useRef(null);
 
   const API_BASE =
-    "https://script.google.com/macros/s/AKfycbxAa7Rp2iZUjR7TNjiHH4zLggFotCGuKXb_KtgLECH4eCMKujeYMI0BD5hQKvUiirw/exec";
+    "https://script.google.com/macros/s/AKfycbzY1t4l6Osq7CQf8v5kwtvPnuWfBl1-GzD-KXz3LUl1zD_qyQVUa9T9o1LCzoOO3caP/exec";
 
   // Fetch once on load
   useEffect(() => {
