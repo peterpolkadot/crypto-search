@@ -32,22 +32,20 @@ export default function Home() {
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    timeoutRef.current = setTimeout(() => {
-      if (!query) {
-        setFiltered([]);
-        return;
-      }
-      const filteredCoins = coins.filter(
-        (c) =>
-          (c.symbol &&
-            c.symbol.toLowerCase().startsWith(query)) ||
-          (c.name &&
-            c.name.toLowerCase().startsWith(query))
-      );
-      setFiltered(filteredCoins.setFiltered(filteredCoins.slice(0, 20));
-console.log("Filtered:", filteredCoins.length, "coins");
-slice(0, 20)); // Limit results
-    }, 150);
+ timeoutRef.current = setTimeout(() => {
+  if (!query) {
+    setFiltered([]);
+    return;
+  }
+  const filteredCoins = coins.filter(
+    (c) =>
+      (c.symbol && c.symbol.toLowerCase().startsWith(query)) ||
+      (c.name && c.name.toLowerCase().startsWith(query))
+  );
+  setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
+  console.log("Filtered:", filteredCoins.length, "coins");
+}, 150);
+
   };
 
   const handleSelect = (coin) => {
