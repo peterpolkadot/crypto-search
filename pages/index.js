@@ -1,113 +1,118 @@
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/router";
+import { useState } from 'react';
 
-export default function Home() {
+export default function CryptoSearch() {
+  const [search, setSearch] = useState('');
   const [coins, setCoins] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filtered, setFiltered] = useState([]);
-  const router = useRouter();
-  const timeoutRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedCoin, setSelectedCoin] = useState(null);
 
-  const API_BASE =
-    "https://script.google.com/macros/s/AKfycbypO38DGJ4pxXuwBmIfFOGFVEWIjdh27pacR3Rz_GUsO_5dxqYAdyVH-ifsFlaNz6XI/exec";
+  const API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
 
-  // Fetch once on load
-  useEffect(() => {
-    async function fetchCoins() {
-      try {
-        const res = await fetch(API_BASE);
-        const data = await res.json();
-        if (Array.isArray(data)) setCoins(data);
-        else console.error("Unexpected data format:", data);
-      } catch (err) {
-        console.error("Failed to fetch coin list:", err);
-      }
-    }
-    fetchCoins();
+  // Fetch all coins on mount
+  useState(() => {
+    fetchAllCoins();
   }, []);
 
-  // Handle typing (debounced)
-  const handleSearch = (e) => {
-    const query = e.target.value.toLowerCase();
-    setSearch(query);
+  async function fetchAllCoins() {
+    setLoading(true);
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setCoins(data);
+    } catch (error) {
+      console.error('Failed to fetch coins:', error);
+    }
+    setLoading(false);
+  }
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  async function handleCoinClick(symbol) {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}?symbol=${symbol}`);
+      const data = await res.json();
+      setSelectedCoin(data);
+    } catch (error) {
+      console.error('Failed to fetch coin details:', error);
+    }
+    setLoading(false);
+  }
 
-    timeoutRef.current = setTimeout(() => {
-      if (!query) {
-        setFiltered([]);
-        return;
-      }
-
-      const filteredCoins = coins.filter((c) => {
-        const symbol = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
-        const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
-        return symbol.startsWith(query) || name.startsWith(query);
-      });
-
-      setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
-      console.log("Filtered:", filteredCoins.length, "coins");
-    }, 150);
-  };
-
-  const handleSelect = (coin) => {
-    setSearch("");
-    setFiltered([]);
-    router.push(`/coins/${coin.symbol}`);
-  };
+  const filteredCoins = coins.filter(coin =>
+    coin.name?.toLowerCase().includes(search.toLowerCase()) ||
+    coin.symbol?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <main
-      style={{
-        fontFamily: "Arial, sans-serif",
-        textAlign: "center",
-        padding: "40px",
-        maxWidth: "500px",
-        margin: "0 auto",
-      }}
-    >
-      <h1>💰 Crypto Search</h1>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Crypto Search</h1>
+      
+      {/* Search Input */}
       <input
         type="text"
-        placeholder="Search for a coin..."
+        placeholder="Search by name or symbol..."
         value={search}
-        onChange={handleSearch}
-        style={{
-          padding: "10px",
-          width: "100%",
-          borderRadius: "8px",
-          border: "1px solid #ccc",
-          fontSize: "16px",
-          marginBottom: "10px",
-        }}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full p-3 border rounded-lg mb-6"
       />
 
-      {filtered.length > 0 && (
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            background: "#fff",
-            textAlign: "left",
-            overflowY: "auto",
-            maxHeight: "300px",
-          }}
-        >
-          {filtered.map((coin) => (
+      {/* Search Results */}
+      {!selectedCoin && (
+        <div className="space-y-2">
+          {filteredCoins.slice(0, 20).map((coin) => (
             <div
               key={coin.symbol}
-              onClick={() => handleSelect(coin)}
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                borderBottom: "1px solid #eee",
-              }}
+              onClick={() => handleCoinClick(coin.symbol)}
+              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer flex justify-between items-center"
             >
-              <strong>{coin.symbol}</strong> — {coin.name}
+              <div>
+                <span className="font-bold">{coin.symbol}</span>
+                <span className="text-gray-600 ml-2">{coin.name}</span>
+              </div>
+              <span className="text-green-600 font-semibold">
+                ${parseFloat(coin.price_usd).toFixed(2)}
+              </span>
             </div>
           ))}
         </div>
       )}
-    </main>
+
+      {/* Selected Coin Summary */}
+      {selectedCoin && !loading && (
+        <div className="space-y-6">
+          <button
+            onClick={() => setSelectedCoin(null)}
+            className="text-blue-600 hover:underline mb-4"
+          >
+            ← Back to search
+          </button>
+
+          {/* Coin Header */}
+          <div className="border rounded-lg p-6 bg-white shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              {selectedCoin.logo && (
+                <img src={selectedCoin.logo} alt={selectedCoin.name} className="w-16 h-16" />
+              )}
+              <div>
+                <h2 className="text-2xl font-bold">{selectedCoin.name}</h2>
+                <p className="text-gray-600">{selectedCoin.symbol}</p>
+              </div>
+            </div>
+            
+            <div className="text-3xl font-bold text-green-600 mb-4">
+              ${parseFloat(selectedCoin.price_usd).toLocaleString()}
+            </div>
+
+            
+              href={`/coin/${selectedCoin.slug || selectedCoin.symbol.toLowerCase()}`}
+              className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              View Full Details →
+            </a>
+          </div>
+        </div>
+      )}
+
+      {loading && <p className="text-center text-gray-500">Loading...</p>}
+    </div>
   );
 }
