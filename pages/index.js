@@ -36,12 +36,14 @@ export default function CryptoSearch() {
     setLoading(false);
   }
 
-  const filteredCoins = coins.filter(coin => {
-    const name = coin.name ? String(coin.name).toLowerCase() : '';
-    const symbol = coin.symbol ? String(coin.symbol).toLowerCase() : '';
-    const searchTerm = search.toLowerCase();
-    return name.includes(searchTerm) || symbol.includes(searchTerm);
-  });
+  const filteredCoins = search.trim() 
+    ? coins.filter(coin => {
+        const name = coin.name ? String(coin.name).toLowerCase() : '';
+        const symbol = coin.symbol ? String(coin.symbol).toLowerCase() : '';
+        const searchTerm = search.toLowerCase();
+        return name.includes(searchTerm) || symbol.includes(searchTerm);
+      })
+    : [];
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -55,7 +57,7 @@ export default function CryptoSearch() {
         className="w-full p-3 border rounded-lg mb-6"
       />
 
-      {!selectedCoin && (
+      {!selectedCoin && search.trim() && (
         <div className="space-y-2">
           {filteredCoins.slice(0, 20).map((coin) => (
             <div
@@ -72,7 +74,14 @@ export default function CryptoSearch() {
               </span>
             </div>
           ))}
+          {filteredCoins.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No coins found</p>
+          )}
         </div>
+      )}
+
+      {!selectedCoin && !search.trim() && (
+        <p className="text-center text-gray-500 py-8">Start typing to search for cryptocurrencies...</p>
       )}
 
       {selectedCoin && !loading && (
