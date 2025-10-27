@@ -85,7 +85,7 @@ export default function CryptoSearch() {
             onClick={() => setSelectedCoin(null)}
             className="text-blue-600 hover:underline mb-4"
           >
-            &larr; Back to search
+            {'← Back to search'}
           </button>
 
           {/* Coin Header */}
@@ -108,7 +108,7 @@ export default function CryptoSearch() {
               href={`/coins/${selectedCoin.symbol.toLowerCase()}`}
               className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
-              View Full Details &rarr;
+              {'View Full Details →'}
             </a>
           </div>
         </div>
