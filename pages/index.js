@@ -36,10 +36,12 @@ export default function CryptoSearch() {
     setLoading(false);
   }
 
-  const filteredCoins = coins.filter(coin =>
-    coin.name?.toLowerCase().includes(search.toLowerCase()) ||
-    coin.symbol?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCoins = coins.filter(coin => {
+    const name = coin.name ? String(coin.name).toLowerCase() : '';
+    const symbol = coin.symbol ? String(coin.symbol).toLowerCase() : '';
+    const searchTerm = search.toLowerCase();
+    return name.includes(searchTerm) || symbol.includes(searchTerm);
+  });
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -66,7 +68,7 @@ export default function CryptoSearch() {
                 <span className="text-gray-600 ml-2">{coin.name}</span>
               </div>
               <span className="text-green-600 font-semibold">
-                ${parseFloat(coin.price_usd).toFixed(2)}
+                ${coin.price_usd ? parseFloat(coin.price_usd).toFixed(2) : 'N/A'}
               </span>
             </div>
           ))}
@@ -94,11 +96,10 @@ export default function CryptoSearch() {
             </div>
             
             <div className="text-3xl font-bold text-green-600 mb-4">
-              ${parseFloat(selectedCoin.price_usd).toLocaleString()}
+              ${selectedCoin.price_usd ? parseFloat(selectedCoin.price_usd).toLocaleString() : 'N/A'}
             </div>
 
-            
-         <a href={`/coins/${selectedCoin.symbol.toLowerCase()}`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">View Full Details</a>
+            <a href={`/coins/${String(selectedCoin.symbol).toLowerCase()}`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">View Full Details</a>
           </div>
         </div>
       )}
