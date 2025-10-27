@@ -1,54 +1,57 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 
 export default function Home() {
   const [coins, setCoins] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
-  const [selectedCoin, setSelectedCoin] = useState(null);
   const router = useRouter();
+  const timeoutRef = useRef(null);
 
-  const API_BASE = "https://script.google.com/macros/s/AKfycbx5InHS_BGPrTCwCm1fY4oezO3Xdwjqe4yE_AKKpLrbT1e_5fC_Vh5Xcfj7ImfknOy-/exec";
+  const API_BASE =
+    "https://script.google.com/macros/s/AKfycbx5InHS_BGPrTCwCm1fY4oezO3Xdwjqe4yE_AKKpLrbT1e_5fC_Vh5Xcfj7ImfknOy-/exec";
 
-  // Fetch coins on load
+  // Fetch once on load
   useEffect(() => {
     async function fetchCoins() {
       try {
         const res = await fetch(API_BASE);
-        const text = await res.text();
-        const json = JSON.parse(text.startsWith("[") ? text : `[${text}]`);
-        if (Array.isArray(json)) setCoins(json);
+        const data = await res.json();
+        if (Array.isArray(data)) setCoins(data);
       } catch (err) {
-        console.error("Failed to fetch coins:", err);
+        console.error("Failed to fetch coin list:", err);
       }
     }
     fetchCoins();
   }, []);
 
-  // Handle search box input
+  // Handle typing (debounced)
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearch(query);
 
-    if (!coins.length || !query) {
-      setFiltered([]);
-      return;
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    const filteredCoins = coins.filter((c) => {
-      const sym = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
-      const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
-      return sym.includes(query) || name.includes(query);
-    });
-
-    setFiltered(filteredCoins.slice(0, 20));
+    timeoutRef.current = setTimeout(() => {
+      if (!query) {
+        setFiltered([]);
+        return;
+      }
+      const filteredCoins = coins.filter(
+        (c) =>
+          (c.symbol &&
+            c.symbol.toLowerCase().startsWith(query)) ||
+          (c.name &&
+            c.name.toLowerCase().startsWith(query))
+      );
+      setFiltered(filteredCoins.slice(0, 20)); // Limit results
+    }, 150);
   };
 
-  // Handle coin selection
   const handleSelect = (coin) => {
-    setSearch(coin.symbol);
+    setSearch("");
     setFiltered([]);
-    setSelectedCoin(coin); // ✅ Display its data
+    router.push(`/coins/${coin.symbol}`);
   };
 
   return (
@@ -62,7 +65,6 @@ export default function Home() {
       }}
     >
       <h1>💰 Crypto Search</h1>
-
       <input
         type="text"
         placeholder="Search for a coin..."
@@ -83,10 +85,10 @@ export default function Home() {
           style={{
             border: "1px solid #ddd",
             borderRadius: "8px",
-            maxHeight: "200px",
-            overflowY: "auto",
             background: "#fff",
             textAlign: "left",
+            overflowY: "auto",
+            maxHeight: "300px",
           }}
         >
           {filtered.map((coin) => (
@@ -102,39 +104,6 @@ export default function Home() {
               <strong>{coin.symbol}</strong> — {coin.name}
             </div>
           ))}
-        </div>
-      )}
-
-      {selectedCoin && (
-        <div
-          style={{
-            marginTop: "20px",
-            background: "#f9f9f9",
-            padding: "15px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
-        >
-          <h2>
-            {selectedCoin.name} ({selectedCoin.symbol})
-          </h2>
-          <p style={{ fontSize: "20px", margin: "10px 0", color: "#0070f3" }}>
-            ${selectedCoin.price_usd?.toFixed(2) ?? "N/A"}
-          </p>
-          <button
-            onClick={() => router.push(`/coins/${selectedCoin.symbol}`)}
-            style={{
-              background: "#0070f3",
-              color: "white",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-            }}
-          >
-            View {selectedCoin.symbol} Page →
-          </button>
         </div>
       )}
     </main>
