@@ -6,7 +6,7 @@ export default function CryptoSearch() {
   const [loading, setLoading] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState(null);
 
-  const API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyWx2wDKgKLRn_SCHsI2UCdzmFxrthfJceDZ8PsK1f2928FxJSeM1Lx_vL4QhW89LCx/exec';
 
   // Fetch all coins on mount
   useState(() => {
