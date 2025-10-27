@@ -60,7 +60,7 @@ export default function CoinDetail() {
         onClick={() => router.back()}
         className="text-blue-600 hover:underline mb-6 flex items-center gap-2"
       >
-        {'← Back to search'}
+        &lt; Back to search
       </button>
 
       {/* Header with Logo, Name, Symbol */}
@@ -211,10 +211,9 @@ function LinkCard({ title, urls }) {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all flex items-start gap-2"
+              className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all"
             >
-              <span className="flex-shrink-0 mt-1">{'→'}</span>
-              <span className="break-all">{url}</span>
+              {url}
             </a>
           </li>
         ))}
