@@ -8,7 +8,7 @@ export default function Home() {
   const [selectedCoin, setSelectedCoin] = useState(null);
   const router = useRouter();
 
-  const API_BASE = "https://script.google.com/macros/s/AKfycbxXA0v3u4bWWLuvqxV34k6uYRlGFXInOgXuccgDaf6oikS1-zWSqEJwz6bbm1qWsocp/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbx5InHS_BGPrTCwCm1fY4oezO3Xdwjqe4yE_AKKpLrbT1e_5fC_Vh5Xcfj7ImfknOy-/exec";
 
   // Fetch coins on load
   useEffect(() => {
