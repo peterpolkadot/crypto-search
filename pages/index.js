@@ -52,15 +52,13 @@ export default function CryptoSearch() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="max-w-2xl mx-auto p-8">
         
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-            Crypto Search
+            💰 Crypto Search
           </h1>
           <p className="text-gray-600">Search thousands of cryptocurrencies instantly</p>
         </div>
         
-        {/* Search Box */}
         <div className="relative mb-8">
           <div className="relative">
             <input
@@ -80,7 +78,6 @@ export default function CryptoSearch() {
             </svg>
           </div>
 
-          {/* Dropdown Results */}
           {showDropdown && search.trim() && filteredCoins.length > 0 && (
             <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-96 overflow-y-auto">
               {filteredCoins.map((coin, idx) => (
@@ -119,11 +116,9 @@ export default function CryptoSearch() {
           )}
         </div>
 
-        {/* Selected Coin Display */}
         {selectedCoin && !loading && (
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100 transform transition-all animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100 transform transition-all">
             
-            {/* Coin Header */}
             <div className="flex items-center gap-4 mb-6">
               {selectedCoin.logo && (
                 <img src={selectedCoin.logo} alt={selectedCoin.name} className="w-20 h-20 rounded-full shadow-lg" />
@@ -134,7 +129,6 @@ export default function CryptoSearch() {
               </div>
             </div>
             
-            {/* Price Display */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6">
               <p className="text-sm text-gray-600 mb-2">Current Price</p>
               <p className="text-5xl font-bold text-green-600">
@@ -145,25 +139,12 @@ export default function CryptoSearch() {
               </p>
             </div>
 
-            {/* View Details Link */}
-            <a 
-              href={`/coins/${String(selectedCoin.symbol).toLowerCase()}`} 
-              className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg"
-            >
-              View Full Details
-            </a>
+            <a href={`/coins/${String(selectedCoin.symbol).toLowerCase()}`} className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg">View Full Details</a>
 
-            {/* Clear Selection */}
-            <button
-              onClick={() => setSelectedCoin(null)}
-              className="block w-full text-center text-gray-600 hover:text-gray-900 font-medium py-3 mt-3 transition-all"
-            >
-              Search another coin
-            </button>
+            <button onClick={() => setSelectedCoin(null)} className="block w-full text-center text-gray-600 hover:text-gray-900 font-medium py-3 mt-3 transition-all">Search another coin</button>
           </div>
         )}
 
-        {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
