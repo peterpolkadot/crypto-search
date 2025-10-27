@@ -6,7 +6,7 @@ export default function CoinPage() {
   const { symbol } = router.query;
   const [coin, setCoin] = useState(null);
 
-  const API_BASE = "https://script.google.com/macros/s/AKfycbyiaxdrdQD4QTZT0OIYhRij_9-MtYYaaitFpEGwgu1mEySyYBZ0fidLmR12Dfvh7sMt/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbxXA0v3u4bWWLuvqxV34k6uYRlGFXInOgXuccgDaf6oikS1-zWSqEJwz6bbm1qWsocp/exec";
 
   useEffect(() => {
     if (!symbol) return;
