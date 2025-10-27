@@ -7,7 +7,7 @@ export default function CoinDetail() {
   const [coin, setCoin] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzY1t4l6Osq7CQf8v5kwtvPnuWfBl1-GzD-KXz3LUl1zD_qyQVUa9T9o1LCzoOO3caP/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbw3__81Gn2Ie73rqYUs2YZa0ctdkraREFG0TzhG72WXUE2piebqs8_v2GZTev9iDb7c/exec';
 
   useEffect(() => {
     if (symbol) {
