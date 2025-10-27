@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 export default function CryptoSearch() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState(null);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyWx2wDKgKLRn_SCHsI2UCdzmFxrthfJceDZ8PsK1f2928FxJSeM1Lx_vL4QhW89LCx/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzY1t4l6Osq7CQf8v5kwtvPnuWfBl1-GzD-KXz3LUl1zD_qyQVUa9T9o1LCzoOO3caP/exec';
 
   // Fetch all coins on mount
-  useState(() => {
+  useEffect(() => {
     fetchAllCoins();
   }, []);
 
@@ -83,7 +85,7 @@ export default function CryptoSearch() {
             onClick={() => setSelectedCoin(null)}
             className="text-blue-600 hover:underline mb-4"
           >
-            ← Back to search
+            &larr; Back to search
           </button>
 
           {/* Coin Header */}
@@ -103,10 +105,10 @@ export default function CryptoSearch() {
             </div>
 
             
-              href={`/coin/${selectedCoin.slug || selectedCoin.symbol.toLowerCase()}`}
+              href={`/coins/${selectedCoin.symbol.toLowerCase()}`}
               className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
-              View Full Details →
+              View Full Details &rarr;
             </a>
           </div>
         </div>
