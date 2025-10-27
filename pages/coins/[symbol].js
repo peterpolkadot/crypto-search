@@ -8,7 +8,7 @@ export default function CoinPage() {
   const [loading, setLoading] = useState(true);
 
   const API_BASE =
-    "https://script.google.com/macros/s/AKfycbx5InHS_BGPrTCwCm1fY4oezO3Xdwjqe4yE_AKKpLrbT1e_5fC_Vh5Xcfj7ImfknOy-/exec";
+    "https://script.google.com/macros/s/AKfycbxQBp5OPJ9Wu6PEeIu5hgHB_K5rgniIaAxwNIs4wIupUnqw_IFSjFkh3YyrpccziA3J/exec";
 
   useEffect(() => {
     if (!symbol) return; // Wait until route param is ready
