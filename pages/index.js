@@ -5,6 +5,7 @@ export default function CryptoSearch() {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const API_URL = 'https://script.google.com/macros/s/AKfycbw3__81Gn2Ie73rqYUs2YZa0ctdkraREFG0TzhG72WXUE2piebqs8_v2GZTev9iDb7c/exec';
 
@@ -26,6 +27,8 @@ export default function CryptoSearch() {
 
   async function handleCoinClick(symbol) {
     setLoading(true);
+    setShowDropdown(false);
+    setSearch('');
     try {
       const res = await fetch(`${API_URL}?symbol=${symbol}`);
       const data = await res.json();
@@ -42,55 +45,60 @@ export default function CryptoSearch() {
         const symbol = coin.symbol ? String(coin.symbol).toLowerCase() : '';
         const searchTerm = search.toLowerCase();
         return name.includes(searchTerm) || symbol.includes(searchTerm);
-      })
+      }).slice(0, 10)
     : [];
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Crypto Search</h1>
       
-      <input
-        type="text"
-        placeholder="Search by name or symbol..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-3 border rounded-lg mb-6"
-      />
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by name or symbol..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          className="w-full p-3 border rounded-lg mb-2"
+        />
 
-      {!selectedCoin && search.trim() && (
-        <div className="space-y-2">
-          {filteredCoins.slice(0, 20).map((coin) => (
-            <div
-              key={coin.symbol}
-              onClick={() => handleCoinClick(coin.symbol)}
-              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer flex justify-between items-center"
-            >
-              <div>
-                <span className="font-bold">{coin.symbol}</span>
-                <span className="text-gray-600 ml-2">{coin.name}</span>
+        {showDropdown && search.trim() && filteredCoins.length > 0 && (
+          <div className="absolute z-10 w-full bg-white border rounded-lg shadow-lg max-h-96 overflow-y-auto">
+            {filteredCoins.map((coin) => (
+              <div
+                key={coin.symbol}
+                onClick={() => handleCoinClick(coin.symbol)}
+                className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
+              >
+                <div>
+                  <span className="font-bold">{coin.symbol}</span>
+                  <span className="text-gray-600 ml-2">{coin.name}</span>
+                </div>
+                <span className="text-green-600 font-semibold text-sm">
+                  ${coin.price_usd ? parseFloat(coin.price_usd).toFixed(2) : 'N/A'}
+                </span>
               </div>
-              <span className="text-green-600 font-semibold">
-                ${coin.price_usd ? parseFloat(coin.price_usd).toFixed(2) : 'N/A'}
-              </span>
-            </div>
-          ))}
-          {filteredCoins.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No coins found</p>
-          )}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {!selectedCoin && !search.trim() && (
-        <p className="text-center text-gray-500 py-8">Start typing to search for cryptocurrencies...</p>
-      )}
+        {showDropdown && search.trim() && filteredCoins.length === 0 && (
+          <div className="absolute z-10 w-full bg-white border rounded-lg shadow-lg p-4">
+            <p className="text-center text-gray-500">No coins found</p>
+          </div>
+        )}
+      </div>
 
       {selectedCoin && !loading && (
-        <div className="space-y-6">
+        <div className="mt-6">
           <button
             onClick={() => setSelectedCoin(null)}
             className="text-blue-600 hover:underline mb-4"
           >
-            Back to search
+            Clear selection
           </button>
 
           <div className="border rounded-lg p-6 bg-white shadow-sm">
@@ -113,7 +121,7 @@ export default function CryptoSearch() {
         </div>
       )}
 
-      {loading && <p className="text-center text-gray-500">Loading...</p>}
+      {loading && <p className="text-center text-gray-500 mt-6">Loading...</p>}
     </div>
   );
 }
