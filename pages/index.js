@@ -44,7 +44,9 @@ export default function Home() {
           (c.name &&
             c.name.toLowerCase().startsWith(query))
       );
-      setFiltered(filteredCoins.slice(0, 20)); // Limit results
+      setFiltered(filteredCoins.setFiltered(filteredCoins.slice(0, 20));
+console.log("Filtered:", filteredCoins.length, "coins");
+slice(0, 20)); // Limit results
     }, 150);
   };
 
