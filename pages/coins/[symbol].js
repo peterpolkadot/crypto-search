@@ -197,14 +197,7 @@ function LinkCard({ title, urls }) {
       <ul className="space-y-2">
         {urls.map((url, i) => (
           <li key={i}>
-            
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all block"
-            >
-              {url}
-            </a>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all block">{url}</a>
           </li>
         ))}
       </ul>
