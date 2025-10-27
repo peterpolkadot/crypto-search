@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 
 export default function CryptoSearch() {
-  const router = useRouter();
   const [search, setSearch] = useState('');
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +83,7 @@ export default function CryptoSearch() {
             onClick={() => setSelectedCoin(null)}
             className="text-blue-600 hover:underline mb-4"
           >
-            {'← Back to search'}
+            &lt; Back to search
           </button>
 
           {/* Coin Header */}
@@ -108,7 +106,7 @@ export default function CryptoSearch() {
               href={`/coins/${selectedCoin.symbol.toLowerCase()}`}
               className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
-              {'View Full Details →'}
+              View Full Details &gt;
             </a>
           </div>
         </div>
