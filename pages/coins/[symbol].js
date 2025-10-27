@@ -55,15 +55,13 @@ export default function CoinDetail() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="text-blue-600 hover:underline mb-6 flex items-center gap-2"
+        className="text-blue-600 hover:underline mb-6"
       >
-        &lt; Back to search
+        Back to search
       </button>
 
-      {/* Header with Logo, Name, Symbol */}
       <div className="flex items-center gap-6 mb-8">
         {coin.logo && (
           <img 
@@ -85,7 +83,6 @@ export default function CoinDetail() {
         </div>
       </div>
 
-      {/* Price Card */}
       {coin.price_usd && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-8 mb-8 shadow-md">
           <p className="text-gray-600 text-sm font-medium mb-2">Current Price</p>
@@ -98,7 +95,6 @@ export default function CoinDetail() {
         </div>
       )}
 
-      {/* Description */}
       {coin.description && (
         <div className="mb-8 bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">About {coin.name}</h2>
@@ -106,14 +102,12 @@ export default function CoinDetail() {
         </div>
       )}
 
-      {/* Notice (if any) */}
       {coin.notice && (
         <div className="mb-8 bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg">
           <p className="text-yellow-800 font-medium">⚠️ {coin.notice}</p>
         </div>
       )}
 
-      {/* Official Resources */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-6 text-gray-900">Official Resources</h2>
         <div className="grid md:grid-cols-2 gap-4">
@@ -132,7 +126,6 @@ export default function CoinDetail() {
         </div>
       </div>
 
-      {/* Social & Community */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-6 text-gray-900">Social & Community</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -154,7 +147,6 @@ export default function CoinDetail() {
         </div>
       </div>
 
-      {/* Tags */}
       {coin.tags && parseTags(coin.tags).length > 0 && (
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-4 text-gray-900">Tags</h2>
@@ -171,7 +163,6 @@ export default function CoinDetail() {
         </div>
       )}
 
-      {/* Technical Details */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-6 text-gray-900">Technical Details</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -197,7 +188,6 @@ export default function CoinDetail() {
   );
 }
 
-// Link Card Component
 function LinkCard({ title, urls }) {
   if (!urls || urls.length === 0) return null;
   
@@ -211,10 +201,8 @@ function LinkCard({ title, urls }) {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all"
-            >
-              {url}
-            </a>
+              className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all block"
+            >{url}</a>
           </li>
         ))}
       </ul>
@@ -222,7 +210,6 @@ function LinkCard({ title, urls }) {
   );
 }
 
-// Info Card Component
 function InfoCard({ label, value, mono = false }) {
   if (!value) return null;
   
