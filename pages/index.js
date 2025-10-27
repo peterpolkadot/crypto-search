@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   const API_BASE =
-    "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
+    "https://script.google.com/macros/s/AKfycbyiaxdrdQD4QTZT0OIYhRij_9-MtYYaaitFpEGwgu1mEySyYBZ0fidLmR12Dfvh7sMt/exec";
 
   // Fetch coins on load
   useEffect(() => {
