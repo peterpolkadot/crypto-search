@@ -3,22 +3,22 @@ import { useState, useEffect } from 'react';
 
 export default function CoinDetail() {
   const router = useRouter();
-  const { slug } = router.query;
+  const { symbol } = router.query;
   const [coin, setCoin] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyWx2wDKgKLRn_SCHsI2UCdzmFxrthfJceDZ8PsK1f2928FxJSeM1Lx_vL4QhW89LCx/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzY1t4l6Osq7CQf8v5kwtvPnuWfBl1-GzD-KXz3LUl1zD_qyQVUa9T9o1LCzoOO3caP/exec';
 
   useEffect(() => {
-    if (slug) {
+    if (symbol) {
       fetchCoinDetails();
     }
-  }, [slug]);
+  }, [symbol]);
 
   async function fetchCoinDetails() {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}?symbol=${slug.toUpperCase()}`);
+      const res = await fetch(`${API_URL}?symbol=${symbol.toUpperCase()}`);
       const data = await res.json();
       setCoin(data);
     } catch (error) {
@@ -60,7 +60,7 @@ export default function CoinDetail() {
         onClick={() => router.back()}
         className="text-blue-600 hover:underline mb-6 flex items-center gap-2"
       >
-        ← Back to search
+        &larr; Back to search
       </button>
 
       {/* Header with Logo, Name, Symbol */}
@@ -137,10 +137,10 @@ export default function CoinDetail() {
         <h2 className="text-3xl font-bold mb-6 text-gray-900">Social & Community</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {coin.urls_twitter && parseUrls(coin.urls_twitter).length > 0 && (
-            <LinkCard title="🐦 Twitter" urls={parseUrls(coin.urls_twitter)} icon="twitter" />
+            <LinkCard title="🐦 Twitter" urls={parseUrls(coin.urls_twitter)} />
           )}
           {coin.urls_reddit && parseUrls(coin.urls_reddit).length > 0 && (
-            <LinkCard title="👽 Reddit" urls={parseUrls(coin.urls_reddit)} icon="reddit" />
+            <LinkCard title="👽 Reddit" urls={parseUrls(coin.urls_reddit)} />
           )}
           {coin.urls_chat && parseUrls(coin.urls_chat).length > 0 && (
             <LinkCard title="💬 Chat" urls={parseUrls(coin.urls_chat)} />
@@ -198,7 +198,7 @@ export default function CoinDetail() {
 }
 
 // Link Card Component
-function LinkCard({ title, urls, icon }) {
+function LinkCard({ title, urls }) {
   if (!urls || urls.length === 0) return null;
   
   return (
@@ -213,7 +213,7 @@ function LinkCard({ title, urls, icon }) {
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all flex items-start gap-2"
             >
-              <span className="flex-shrink-0 mt-1">→</span>
+              <span className="flex-shrink-0 mt-1">&rarr;</span>
               <span className="break-all">{url}</span>
             </a>
           </li>
