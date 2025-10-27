@@ -98,11 +98,7 @@ export default function CryptoSearch() {
             </div>
 
             
-              href={`/coins/${selectedCoin.symbol.toLowerCase()}`}
-              className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-            >
-              View Full Details
-            </a>
+         <a href={`/coins/${selectedCoin.symbol.toLowerCase()}`} className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">View Full Details</a>
           </div>
         </div>
       )}
