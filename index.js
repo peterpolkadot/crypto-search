@@ -6,7 +6,7 @@ export default function Home() {
   const [listings, setListings] = useState([]);
   const [query, setQuery] = useState("");
 
-  const API_BASE = "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbxXA0v3u4bWWLuvqxV34k6uYRlGFXInOgXuccgDaf6oikS1-zWSqEJwz6bbm1qWsocp/exec";
 
   useEffect(() => {
     async function loadData() {
