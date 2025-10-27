@@ -5,60 +5,51 @@ export default function Home() {
   const [coins, setCoins] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
+  const [selectedCoin, setSelectedCoin] = useState(null);
   const router = useRouter();
 
   const API_BASE =
     "https://script.google.com/macros/s/AKfycbz7qbbd9vly8ppB6uR1JCNlL2ZWkpTiCkrzo6HcN_3RW_MrxqdfDu832a-IDXdeexZS/exec";
 
+  // Fetch coins on load
   useEffect(() => {
     async function fetchCoins() {
       try {
         const res = await fetch(API_BASE);
         const text = await res.text();
-
-        // Handle plain-text or malformed JSON responses gracefully
-        const json = JSON.parse(
-          text.startsWith("[") ? text : `[${text}]`
-        );
-
-        if (Array.isArray(json)) {
-          setCoins(json);
-        } else {
-          console.error("Unexpected data:", json);
-        }
+        const json = JSON.parse(text.startsWith("[") ? text : `[${text}]`);
+        if (Array.isArray(json)) setCoins(json);
       } catch (err) {
-        console.error("Failed to fetch coin list:", err);
+        console.error("Failed to fetch coins:", err);
       }
     }
-
     fetchCoins();
   }, []);
 
-const handleSearch = (e) => {
-  const query = e.target.value.toLowerCase();
-  setSearch(query);
+  // Handle search box input
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearch(query);
 
-  // ✅ Don’t run if no coins yet or input is empty
-  if (!coins.length || !query) {
-    setFiltered([]);
-    return;
-  }
+    if (!coins.length || !query) {
+      setFiltered([]);
+      return;
+    }
 
-  // ✅ Safe filtering — avoids .toLowerCase() crashes
-  const filteredCoins = coins.filter((c) => {
-    const sym = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
-    const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
-    return sym.includes(query) || name.includes(query);
-  });
+    const filteredCoins = coins.filter((c) => {
+      const sym = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
+      const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
+      return sym.includes(query) || name.includes(query);
+    });
 
-  setFiltered(filteredCoins.slice(0, 20)); // limit results
-};
+    setFiltered(filteredCoins.slice(0, 20));
+  };
 
-
+  // Handle coin selection
   const handleSelect = (coin) => {
     setSearch(coin.symbol);
     setFiltered([]);
-    router.push(`/coins/${coin.symbol}`); // Redirect to coin page
+    setSelectedCoin(coin); // ✅ Display its data
   };
 
   return (
@@ -72,6 +63,7 @@ const handleSearch = (e) => {
       }}
     >
       <h1>💰 Crypto Search</h1>
+
       <input
         type="text"
         placeholder="Search for a coin..."
@@ -113,6 +105,39 @@ const handleSearch = (e) => {
           ))}
         </div>
       )}
+
+      {selectedCoin && (
+        <div
+          style={{
+            marginTop: "20px",
+            background: "#f9f9f9",
+            padding: "15px",
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h2>
+            {selectedCoin.name} ({selectedCoin.symbol})
+          </h2>
+          <p style={{ fontSize: "20px", margin: "10px 0", color: "#0070f3" }}>
+            ${selectedCoin.price_usd?.toFixed(2) ?? "N/A"}
+          </p>
+          <button
+            onClick={() => router.push(`/coins/${selectedCoin.symbol}`)}
+            style={{
+              background: "#0070f3",
+              color: "white",
+              border: "none",
+              padding: "10px 16px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            View {selectedCoin.symbol} Page →
+          </button>
+        </div>
+      )}
     </main>
   );
-}  
+}
