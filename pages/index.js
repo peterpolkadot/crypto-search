@@ -9,7 +9,7 @@ export default function Home() {
   const timeoutRef = useRef(null);
 
   const API_BASE =
-    "https://script.google.com/macros/s/AKfycbx5InHS_BGPrTCwCm1fY4oezO3Xdwjqe4yE_AKKpLrbT1e_5fC_Vh5Xcfj7ImfknOy-/exec";
+    "https://script.google.com/macros/s/AKfycbxQBp5OPJ9Wu6PEeIu5hgHB_K5rgniIaAxwNIs4wIupUnqw_IFSjFkh3YyrpccziA3J/exec";
 
   // Fetch once on load
   useEffect(() => {
@@ -18,6 +18,7 @@ export default function Home() {
         const res = await fetch(API_BASE);
         const data = await res.json();
         if (Array.isArray(data)) setCoins(data);
+        else console.error("Unexpected data format:", data);
       } catch (err) {
         console.error("Failed to fetch coin list:", err);
       }
@@ -32,20 +33,21 @@ export default function Home() {
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
- timeoutRef.current = setTimeout(() => {
-  if (!query) {
-    setFiltered([]);
-    return;
-  }
-  const filteredCoins = coins.filter(
-    (c) =>
-      (c.symbol && c.symbol.toLowerCase().startsWith(query)) ||
-      (c.name && c.name.toLowerCase().startsWith(query))
-  );
-  setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
-  console.log("Filtered:", filteredCoins.length, "coins");
-}, 150);
+    timeoutRef.current = setTimeout(() => {
+      if (!query) {
+        setFiltered([]);
+        return;
+      }
 
+      const filteredCoins = coins.filter((c) => {
+        const symbol = typeof c.symbol === "string" ? c.symbol.toLowerCase() : "";
+        const name = typeof c.name === "string" ? c.name.toLowerCase() : "";
+        return symbol.startsWith(query) || name.startsWith(query);
+      });
+
+      setFiltered(filteredCoins.slice(0, 20)); // Limit to 20 results
+      console.log("Filtered:", filteredCoins.length, "coins");
+    }, 150);
   };
 
   const handleSelect = (coin) => {
