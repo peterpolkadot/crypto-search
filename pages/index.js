@@ -8,7 +8,7 @@ export default function CryptoSearch() {
   const [selectedCoin, setSelectedCoin] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbw3__81Gn2Ie73rqYUs2YZa0ctdkraREFG0TzhG72WXUE2piebqs8_v2GZTev9iDb7c/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwtzx53k6qy40R7bbLL7xPOwOPVgVa54vLKzZx6DWGPo1C3rhS-NGvvw15vrA4vkXl_/exec';
 
   useEffect(() => {
     fetchAllCoins();
