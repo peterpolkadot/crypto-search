@@ -5,13 +5,17 @@ import { supabase } from '../../lib/supabase';
 export async function getServerSideProps(context) {
   const { symbol } = context.params;
   
-  const { data: coin, error } = await supabase
+  console.log('Looking for symbol:', symbol.toUpperCase());
+  
+  const { data: coins, error } = await supabase
     .from('coins')
     .select('*')
-    .ilike('symbol', symbol)
-    .single();
+    .ilike('symbol', symbol.toUpperCase());
   
-  if (error || !coin) {
+  console.log('Query error:', error);
+  console.log('Found coins:', coins);
+  
+  if (error || !coins || coins.length === 0) {
     console.error('Error fetching coin:', error);
     return {
       props: { coin: null }
@@ -19,9 +23,9 @@ export async function getServerSideProps(context) {
   }
   
   return {
-    props: { coin }
+    props: { coin: coins[0] }
   };
-}
+}}
 
 export default function CoinDetail({ coin }) {
   const router = useRouter();
