@@ -258,3 +258,82 @@ export default function CoinDetail({ coin }) {
                 <StatCard label="Circulating Supply" value={`${parseFloat(coin.circulating_supply).toLocaleString(undefined, {maximumFractionDigits: 0})} ${coin.symbol}`} />
               )}
               {coin.total_supply && (
+                <StatCard label="Total Supply" value={`${parseFloat(coin.total_supply).toLocaleString(undefined, {maximumFractionDigits: 0})} ${coin.symbol}`} />
+              )}
+              {coin.max_supply && (
+                <StatCard label="Max Supply" value={`${parseFloat(coin.max_supply).toLocaleString(undefined, {maximumFractionDigits: 0})} ${coin.symbol}`} />
+              )}
+              {coin.rank && (
+                <StatCard label="CoinMarketCap Rank" value={`#${coin.rank}`} />
+              )}
+            </div>
+          </div>
+
+          {/* Technical Details */}
+          <div className="bg-white rounded-3xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold mb-6 text-gray-900">Technical Details</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coin.category && <InfoCard label="Category" value={coin.category} />}
+              {coin.platform && <InfoCard label="Platform" value={coin.platform} />}
+              {coin.contract_address && (
+                <InfoCard 
+                  label="Contract Address" 
+                  value={coin.contract_address} 
+                  mono 
+                />
+              )}
+              {coin.date_added && (
+                <InfoCard label="Date Added to CMC" value={formatDate(coin.date_added)} />
+              )}
+              {coin.date_launched && (
+                <InfoCard label="Launch Date" value={formatDate(coin.date_launched)} />
+              )}
+              {coin.id && <InfoCard label="CMC ID" value={coin.id} />}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function LinkCard({ title, urls }) {
+  if (!urls || urls.length === 0) return null;
+  
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-5 hover:shadow-md transition-shadow">
+      <h3 className="font-bold text-gray-900 mb-3 text-lg">{title}</h3>
+      <ul className="space-y-2">
+        {urls.map((url, i) => (
+          <li key={i}>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all block">{url}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  if (!value) return null;
+  
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
+      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
+      <p className="font-semibold text-gray-900 text-base break-all">{value}</p>
+    </div>
+  );
+}
+
+function InfoCard({ label, value, mono = false }) {
+  if (!value) return null;
+  
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
+      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
+      <p className={`font-semibold text-gray-900 ${mono ? 'font-mono text-xs' : 'text-base'} break-all`}>
+        {value}
+      </p>
+    </div>
+  );
+}
