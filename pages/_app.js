@@ -1,11 +1,26 @@
 import '../styles/globals.css'
-import { DefaultSeo } from 'next-seo';
-import SEO from '../next-seo.config';
+import Head from 'next/head'
 
 export default function App({ Component, pageProps }) {
   return (
     <>
-      <DefaultSeo {...SEO} />
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="robots" content="index,follow" />
+        <meta name="description" content="Search and track live cryptocurrency prices for Bitcoin, Ethereum, Solana and thousands more. Get real-time crypto data and detailed coin information." />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta property="og:title" content="Crypto Search - Live Cryptocurrency Prices & Data" />
+        <meta property="og:description" content="Search and track live cryptocurrency prices for Bitcoin, Ethereum, Solana and thousands more. Get real-time crypto data and detailed coin information." />
+        <meta property="og:url" content="https://crypto-search2.vercel.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://crypto-search2.vercel.app/og-image.png" />
+        <meta property="og:image:alt" content="Crypto Search" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:site_name" content="Crypto Search" />
+      </Head>
       <Component {...pageProps} />
     </>
   )
