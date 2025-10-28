@@ -1,44 +1,29 @@
-import { useState, useEffect } from 'react';
-import { NextSeo } from 'next-seo';
+import { useState } from 'react';
+import Head from 'next/head';
+import { supabase } from '../lib/supabase';
 
-export default function CryptoSearch() {
+export async function getServerSideProps() {
+  // Fetch top 100 coins sorted by rank for the search
+  const { data: coins, error } = await supabase
+    .from('coins')
+    .select('*')
+    .order('rank', { ascending: true })
+    .limit(100);
+
+  if (error) {
+    console.error('Error fetching coins:', error);
+    return { props: { coins: [] } };
+  }
+
+  return {
+    props: { coins: coins || [] }
+  };
+}
+
+export default function CryptoSearch({ coins }) {
   const [search, setSearch] = useState('');
-  const [coins, setCoins] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwtzx53k6qy40R7bbLL7xPOwOPVgVa54vLKzZx6DWGPo1C3rhS-NGvvw15vrA4vkXl_/exec';
-
-  useEffect(() => {
-    fetchAllCoins();
-  }, []);
-
-  async function fetchAllCoins() {
-    setLoading(true);
-    try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      setCoins(data);
-    } catch (error) {
-      console.error('Failed to fetch coins:', error);
-    }
-    setLoading(false);
-  }
-
-  async function handleCoinClick(symbol) {
-    setLoading(true);
-    setShowDropdown(false);
-    setSearch('');
-    try {
-      const res = await fetch(`${API_URL}?symbol=${symbol}`);
-      const data = await res.json();
-      setSelectedCoin(data);
-    } catch (error) {
-      console.error('Failed to fetch coin details:', error);
-    }
-    setLoading(false);
-  }
 
   const filteredCoins = search.trim() 
     ? coins.filter(coin => {
@@ -51,11 +36,20 @@ export default function CryptoSearch() {
 
   return (
     <>
-      <NextSeo
-        title="Home"
-        description="Search live cryptocurrency prices instantly. Track Bitcoin, Ethereum, Solana and thousands of cryptocurrencies in real-time."
-        canonical="https://crypto-search2.vercel.app/"
-      />
+      <Head>
+        <title>Crypto Search - Live Cryptocurrency Prices & Data</title>
+        <meta name="description" content="Search live cryptocurrency prices instantly. Track Bitcoin, Ethereum, Solana and thousands of cryptocurrencies in real-time." />
+        <meta property="og:title" content="Crypto Search - Live Cryptocurrency Prices" />
+        <meta property="og:description" content="Search live cryptocurrency prices instantly. Track Bitcoin, Ethereum, Solana and thousands of cryptocurrencies in real-time." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crypto-search2.vercel.app/" />
+        <meta property="og:image" content="https://crypto-search2.vercel.app/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Crypto Search - Live Cryptocurrency Prices" />
+        <meta name="twitter:description" content="Search live cryptocurrency prices instantly." />
+        <link rel="canonical" href="https://crypto-search2.vercel.app/" />
+      </Head>
+      
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="max-w-2xl mx-auto p-8">
           
@@ -90,7 +84,11 @@ export default function CryptoSearch() {
                 {filteredCoins.map((coin, idx) => (
                   <div
                     key={coin.symbol}
-                    onClick={() => handleCoinClick(coin.symbol)}
+                    onClick={() => {
+                      setSelectedCoin(coin);
+                      setShowDropdown(false);
+                      setSearch('');
+                    }}
                     className={`p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all ${
                       idx !== filteredCoins.length - 1 ? 'border-b border-gray-100' : ''
                     }`}
@@ -123,13 +121,13 @@ export default function CryptoSearch() {
             )}
           </div>
 
-          {selectedCoin && !loading && (
+          {selectedCoin && (
             <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100 transform transition-all">
               
               <div className="flex items-center gap-4 mb-6">
-                {selectedCoin.logo && (
-                  <img src={selectedCoin.logo} alt={selectedCoin.name} className="w-20 h-20 rounded-full shadow-lg" />
-                )}
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                  {selectedCoin.symbol ? selectedCoin.symbol.substring(0, 2) : '?'}
+                </div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">{selectedCoin.name}</h2>
                   <p className="text-xl text-gray-500">{selectedCoin.symbol}</p>
@@ -149,13 +147,6 @@ export default function CryptoSearch() {
               <a href={`/coins/${String(selectedCoin.symbol).toLowerCase()}`} className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg">View Full Details</a>
 
               <button onClick={() => setSelectedCoin(null)} className="block w-full text-center text-gray-600 hover:text-gray-900 font-medium py-3 mt-3 transition-all">Search another coin</button>
-            </div>
-          )}
-
-          {loading && (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
-              <p className="text-gray-600 mt-4">Loading...</p>
             </div>
           )}
 
