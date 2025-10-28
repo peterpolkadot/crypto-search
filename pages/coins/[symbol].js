@@ -1,58 +1,41 @@
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
-export default function CoinDetail() {
+const API_URL = 'https://script.google.com/macros/s/AKfycbwtzx53k6qy40R7bbLL7xPOwOPVgVa54vLKzZx6DWGPo1C3rhS-NGvvw15vrA4vkXl_/exec';
+
+export async function getServerSideProps(context) {
+  const { symbol } = context.params;
+  
+  try {
+    const res = await fetch(`${API_URL}?symbol=${symbol.toUpperCase()}`);
+    const coin = await res.json();
+    
+    if (coin && coin.symbol) {
+      return {
+        props: { coin }
+      };
+    }
+    
+    return {
+      props: { coin: null }
+    };
+  } catch (error) {
+    console.error('Failed to fetch coin:', error);
+    return {
+      props: { coin: null }
+    };
+  }
+}
+
+export default function CoinDetail({ coin }) {
   const router = useRouter();
-  const { symbol } = router.query;
-  const [coin, setCoin] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwtzx53k6qy40R7bbLL7xPOwOPVgVa54vLKzZx6DWGPo1C3rhS-NGvvw15vrA4vkXl_/exec';
-
-  useEffect(() => {
-    if (symbol) {
-      fetchCoinDetails();
-    }
-  }, [symbol]);
-
-  async function fetchCoinDetails() {
-    setLoading(true);
-    setError(false);
-    try {
-      const res = await fetch(`${API_URL}?symbol=${symbol.toUpperCase()}`);
-      const data = await res.json();
-      
-      if (data && data.symbol) {
-        setCoin(data);
-      } else {
-        setError(true);
-      }
-    } catch (err) {
-      console.error('Failed to fetch coin:', err);
-      setError(true);
-    }
-    setLoading(false);
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading {symbol}...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !coin) {
+  if (!coin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Coin Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn't find information for "{symbol}"</p>
+          <p className="text-gray-600 mb-6">We couldn't find information for this coin</p>
           <a href="/" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">Back to Search</a>
         </div>
       </div>
@@ -82,7 +65,11 @@ export default function CoinDetail() {
     return tagString.split(',').map(tag => tag.trim()).filter(Boolean);
   };
 
-  const coinPrice = coin.price_usd ? parseFloat(coin.price_usd).toLocaleString() : 'N/A';
+  const coinPrice = coin.price_usd ? parseFloat(coin.price_usd).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) : 'N/A';
+  
   const pageUrl = `https://crypto-search2.vercel.app/coins/${String(coin.symbol).toLowerCase()}`;
 
   return (
