@@ -1,29 +1,35 @@
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { supabase } from '../../lib/supabase';
+import { marked } from 'marked';
 
 export async function getServerSideProps(context) {
   const { symbol } = context.params;
-  
+
   console.log('Looking for symbol:', symbol.toUpperCase());
-  
+
   const { data: coins, error } = await supabase
     .from('coins')
     .select('*')
     .ilike('symbol', symbol.toUpperCase());
-  
+
   console.log('Query error:', error);
   console.log('Found coins:', coins);
-  
+
   if (error || !coins || coins.length === 0) {
     console.error('Error fetching coin:', error);
     return {
       props: { coin: null }
     };
   }
-  
+
+  const coin = coins[0];
+  if (coin.news_markdown) {
+    coin.news_html = marked(coin.news_markdown);
+  }
+
   return {
-    props: { coin: coins[0] }
+    props: { coin }
   };
 }
 
@@ -142,7 +148,6 @@ export default function CoinDetail({ coin }) {
                   })}
                 </p>
                 
-                {/* Price Changes */}
                 <div className="grid grid-cols-3 gap-4 mt-6">
                   {coin.chg_1h !== null && (
                     <div>
@@ -274,7 +279,7 @@ export default function CoinDetail({ coin }) {
           </div>
 
           {/* Technical Details */}
-          <div className="bg-white rounded-3xl shadow-xl p-8">
+          <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
             <h2 className="text-3xl font-bold mb-6 text-gray-900">Technical Details</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {coin.category && <InfoCard label="Category" value={coin.category} />}
@@ -295,6 +300,16 @@ export default function CoinDetail({ coin }) {
               {coin.id && <InfoCard label="CMC ID" value={coin.id} />}
             </div>
           </div>
+
+          {coin.news_html && (
+            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
+              <h2 className="text-3xl font-bold mb-6 text-gray-900">AI-Generated Market Overview</h2>
+              <div
+                className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: coin.news_html }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </>
