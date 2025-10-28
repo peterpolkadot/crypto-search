@@ -25,7 +25,7 @@ export async function getServerSideProps(context) {
   return {
     props: { coin: coins[0] }
   };
-}}
+}
 
 export default function CoinDetail({ coin }) {
   const router = useRouter();
