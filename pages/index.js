@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-
+import { NextSeo } from 'next-seo';
 export default function CryptoSearch() {
   const [search, setSearch] = useState('');
   const [coins, setCoins] = useState([]);
