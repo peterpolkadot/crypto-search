@@ -95,9 +95,13 @@ export default function CryptoSearch({ coins }) {
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {coin.symbol ? coin.symbol.substring(0, 2) : '?'}
-                        </div>
+                        {coin.logo ? (
+                          <img src={coin.logo} alt={coin.name} className="w-10 h-10 rounded-full" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {coin.symbol ? coin.symbol.substring(0, 2) : '?'}
+                          </div>
+                        )}
                         <div>
                           <div className="font-bold text-gray-900">{coin.symbol}</div>
                           <div className="text-sm text-gray-500">{coin.name}</div>
@@ -125,9 +129,13 @@ export default function CryptoSearch({ coins }) {
             <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100 transform transition-all">
               
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                  {selectedCoin.symbol ? selectedCoin.symbol.substring(0, 2) : '?'}
-                </div>
+                {selectedCoin.logo ? (
+                  <img src={selectedCoin.logo} alt={selectedCoin.name} className="w-20 h-20 rounded-full shadow-lg" />
+                ) : (
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                    {selectedCoin.symbol ? selectedCoin.symbol.substring(0, 2) : '?'}
+                  </div>
+                )}
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">{selectedCoin.name}</h2>
                   <p className="text-xl text-gray-500">{selectedCoin.symbol}</p>
