@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import { NextSeo } from 'next-seo';
+import Head from 'next/head';
 
 export default function CoinDetail() {
   const router = useRouter();
@@ -54,18 +54,26 @@ export default function CoinDetail() {
     return tagString.split(',').map(tag => tag.trim()).filter(Boolean);
   };
 
+  const coinPrice = coin.price_usd ? parseFloat(coin.price_usd).toLocaleString() : 'N/A';
+  const pageUrl = `https://crypto-search2.vercel.app/coins/${String(coin.symbol).toLowerCase()}`;
+
   return (
     <>
-      <NextSeo
-        title={`${coin.name} (${coin.symbol}) Price`}
-        description={`Live ${coin.name} price, charts, market cap, and detailed information. Current ${coin.symbol} price: $${coin.price_usd ? parseFloat(coin.price_usd).toLocaleString() : 'N/A'}`}
-        canonical={`https://crypto-search2.vercel.app/coins/${String(coin.symbol).toLowerCase()}`}
-        openGraph={{
-          title: `${coin.name} (${coin.symbol}) - $${coin.price_usd ? parseFloat(coin.price_usd).toLocaleString() : 'N/A'}`,
-          description: coin.description || `Live ${coin.name} price and information`,
-          images: coin.logo ? [{ url: coin.logo, alt: coin.name }] : [],
-        }}
-      />
+      <Head>
+        <title>{coin.name} ({coin.symbol}) Price | Crypto Search</title>
+        <meta name="description" content={`Live ${coin.name} price, charts, market cap, and detailed information. Current ${coin.symbol} price: $${coinPrice}`} />
+        <meta property="og:title" content={`${coin.name} (${coin.symbol}) - $${coinPrice}`} />
+        <meta property="og:description" content={coin.description || `Live ${coin.name} price and information`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={pageUrl} />
+        {coin.logo && <meta property="og:image" content={coin.logo} />}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${coin.name} (${coin.symbol}) - $${coinPrice}`} />
+        <meta name="twitter:description" content={coin.description || `Live ${coin.name} price and information`} />
+        {coin.logo && <meta name="twitter:image" content={coin.logo} />}
+        <link rel="canonical" href={pageUrl} />
+      </Head>
+      
       <div className="max-w-6xl mx-auto p-6">
         <button
           onClick={() => router.back()}
@@ -158,3 +166,75 @@ export default function CoinDetail() {
             )}
           </div>
         </div>
+
+        {coin.tags && parseTags(coin.tags).length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-4 text-gray-900">Tags</h2>
+            <div className="flex flex-wrap gap-2">
+              {parseTags(coin.tags).map((tag, i) => (
+                <span 
+                  key={i} 
+                  className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium hover:shadow-md transition-shadow"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-6 text-gray-900">Technical Details</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {coin.category && <InfoCard label="Category" value={coin.category} />}
+            {coin.platform && <InfoCard label="Platform" value={coin.platform} />}
+            {coin.contract_address && (
+              <InfoCard 
+                label="Contract Address" 
+                value={coin.contract_address} 
+                mono 
+              />
+            )}
+            {coin.date_added && (
+              <InfoCard label="Date Added to CMC" value={formatDate(coin.date_added)} />
+            )}
+            {coin.date_launched && (
+              <InfoCard label="Launch Date" value={formatDate(coin.date_launched)} />
+            )}
+            {coin.id && <InfoCard label="CMC ID" value={coin.id} />}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function LinkCard({ title, urls }) {
+  if (!urls || urls.length === 0) return null;
+  
+  return (
+    <div className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="font-bold text-gray-900 mb-3 text-lg">{title}</h3>
+      <ul className="space-y-2">
+        {urls.map((url, i) => (
+          <li key={i}>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline text-sm break-all block">{url}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function InfoCard({ label, value, mono = false }) {
+  if (!value) return null;
+  
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4 shadow-sm">
+      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
+      <p className={`font-semibold text-gray-900 ${mono ? 'font-mono text-xs' : 'text-base'} break-all`}>
+        {value}
+      </p>
+    </div>
+  );
+}
