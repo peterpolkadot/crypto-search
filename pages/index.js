@@ -4,30 +4,59 @@ import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
 
 // ───────────────────────────────
-// SSR: Fetch Top 100 Coins (Paginated)
+// SSR: Fetch Top 100 Coins (JOIN both tables)
 // ───────────────────────────────
 export async function getServerSideProps(context) {
   const page = parseInt(context.query.page || '1', 10);
   const limit = 100;
   const offset = (page - 1) * limit;
 
+  // Join coins (market data) with coins_meta (logos, descriptions)
   const { data: coins, error } = await supabase
     .from('coins')
-    .select('*')
-    .order('rank', { ascending: true })
+    .select(`
+      id,
+      name,
+      symbol,
+      slug,
+      cmc_rank,
+      price,
+      percent_change_24h,
+      coins_meta (
+        logo,
+        description
+      )
+    `)
+    .not('cmc_rank', 'is', null)
+    .order('cmc_rank', { ascending: true })
     .range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching coins:', error);
-    return { props: { coins: [], page } };
+    return { props: { coins: [], page, totalCount: 0 } };
   }
+
+  // Flatten the data structure
+  const flattenedCoins = (coins || []).map(coin => ({
+    ...coin,
+    logo: coin.coins_meta?.[0]?.logo || null,
+    description: coin.coins_meta?.[0]?.description || null,
+    rank: coin.cmc_rank,
+    price_usd: coin.price,
+    chg_24h: coin.percent_change_24h
+  }));
 
   const { count } = await supabase
     .from('coins')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'exact', head: true })
+    .not('cmc_rank', 'is', null);
 
   return {
-    props: { coins: coins || [], page, totalCount: count || 0 },
+    props: { 
+      coins: flattenedCoins, 
+      page, 
+      totalCount: count || 0 
+    },
   };
 }
 
@@ -130,7 +159,8 @@ export default function Home({ coins, page, totalCount }) {
                   filteredCoins.map((coin) => (
                     <tr
                       key={coin.id}
-                      className="border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all"
+                      className="border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all cursor-pointer"
+                      onClick={() => router.push(`/coins/${coin.slug}`)}
                     >
                       <td className="px-6 py-4 text-gray-600 font-medium">{coin.rank}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
@@ -145,12 +175,9 @@ export default function Home({ coins, page, totalCount }) {
                             {coin.symbol?.substring(0, 2) || '?'}
                           </div>
                         )}
-                        <a
-                          href={`/coins/${coin.slug}`}
-                          className="text-gray-900 font-semibold hover:text-blue-600 transition-all"
-                        >
+                        <span className="text-gray-900 font-semibold hover:text-blue-600 transition-all">
                           {coin.name}
-                        </a>
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-gray-500">{coin.symbol}</td>
                       <td className="px-6 py-4 text-right text-gray-800 font-semibold">
@@ -166,10 +193,12 @@ export default function Home({ coins, page, totalCount }) {
                           coin.chg_24h >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {coin.chg_24h >= 0 ? '▲' : '▼'}{' '}
-                        {coin.chg_24h
-                          ? `${parseFloat(coin.chg_24h).toFixed(2)}%`
-                          : '—'}
+                        {coin.chg_24h !== null && coin.chg_24h !== undefined ? (
+                          <>
+                            {coin.chg_24h >= 0 ? '▲' : '▼'}{' '}
+                            {parseFloat(coin.chg_24h).toFixed(2)}%
+                          </>
+                        ) : '—'}
                       </td>
                     </tr>
                   ))
