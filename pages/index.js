@@ -88,52 +88,53 @@ export async function getServerSideProps(context) {
   }));
 
   // Fetch stats data (top gainers, losers, etc.)
-// Fetch stats data (top gainers, losers, etc.)
-// Get MORE coins and filter better for accurate stats
-const { data: allCoins } = await supabase
-  .from('coins')
-  .select('id, name, symbol, slug, price, percent_change_24h, volume_24h, market_cap, cmc_rank')
-  .not('cmc_rank', 'is', null)
-  .lte('cmc_rank', 1000) // Only top 1000 coins
-  .order('cmc_rank', { ascending: true });
+  const { data: allCoins } = await supabase
+    .from('coins')
+    .select('id, name, symbol, slug, price, percent_change_24h, volume_24h, market_cap, cmc_rank')
+    .not('cmc_rank', 'is', null)
+    .not('percent_change_24h', 'is', null)
+    .not('volume_24h', 'is', null)
+    .lte('cmc_rank', 1000)
+    .order('cmc_rank', { ascending: true });
 
-const stats = {
-  topGainers: (allCoins || [])
-    .filter(c => 
-      c.percent_change_24h !== null && 
-      c.percent_change_24h > 0 &&
-      c.market_cap !== null &&
-      parseFloat(c.market_cap) > 1e8 // Filter out tiny coins (>100M market cap)
-    )
-    .sort((a, b) => b.percent_change_24h - a.percent_change_24h)
-    .slice(0, 5),
-    
-  topLosers: (allCoins || [])
-    .filter(c => 
-      c.percent_change_24h !== null && 
-      c.percent_change_24h < 0 &&
-      c.market_cap !== null &&
-      parseFloat(c.market_cap) > 1e8 // Filter out tiny coins
-    )
-    .sort((a, b) => a.percent_change_24h - b.percent_change_24h)
-    .slice(0, 5),
-    
-  topVolume: (allCoins || [])
-    .filter(c => 
-      c.volume_24h !== null && 
-      c.volume_24h > 0
-    )
-    .sort((a, b) => parseFloat(b.volume_24h) - parseFloat(a.volume_24h))
-    .slice(0, 5),
-    
-  topMarketCap: (allCoins || [])
-    .filter(c => 
-      c.market_cap !== null && 
-      c.market_cap > 0
-    )
-    .sort((a, b) => parseFloat(b.market_cap) - parseFloat(a.market_cap))
-    .slice(0, 5),
-};
+  const stats = {
+    topGainers: (allCoins || [])
+      .filter(c => 
+        c.percent_change_24h !== null && 
+        c.percent_change_24h > 0 &&
+        c.market_cap !== null &&
+        parseFloat(c.market_cap) > 1e8
+      )
+      .sort((a, b) => b.percent_change_24h - a.percent_change_24h)
+      .slice(0, 5),
+      
+    topLosers: (allCoins || [])
+      .filter(c => 
+        c.percent_change_24h !== null && 
+        c.percent_change_24h < 0 &&
+        c.market_cap !== null &&
+        parseFloat(c.market_cap) > 1e8
+      )
+      .sort((a, b) => a.percent_change_24h - b.percent_change_24h)
+      .slice(0, 5),
+      
+    topVolume: (allCoins || [])
+      .filter(c => 
+        c.volume_24h !== null && 
+        c.volume_24h > 0
+      )
+      .sort((a, b) => parseFloat(b.volume_24h) - parseFloat(a.volume_24h))
+      .slice(0, 5),
+      
+    topMarketCap: (allCoins || [])
+      .filter(c => 
+        c.market_cap !== null && 
+        c.market_cap > 0
+      )
+      .sort((a, b) => parseFloat(b.market_cap) - parseFloat(a.market_cap))
+      .slice(0, 5),
+  };
+
   const { count } = await supabase
     .from('coins')
     .select('*', { count: 'exact', head: true })
@@ -295,15 +296,12 @@ export default function Home({ coins, page, totalCount, stats }) {
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-10">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Header */}
+          {/* Page Title */}
           <div className="text-center mb-10">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-              💰 Crypto Search
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+              Top Cryptocurrencies by Market Cap
             </h1>
             <p className="text-gray-600">
-              Search and explore top cryptocurrencies by market cap
-            </p>
-            <p className="text-gray-500 text-sm mt-2">
               Tracking {totalCount.toLocaleString()} cryptocurrencies
             </p>
           </div>
@@ -592,6 +590,7 @@ export default function Home({ coins, page, totalCount, stats }) {
     </>
   );
 }
+
 /* ────────────────────────────────────────────────
    Mini Stats Table Component
 ──────────────────────────────────────────────── */
