@@ -192,173 +192,166 @@ export default function CoinDetail({ coin }) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
-        <div className="max-w-6xl mx-auto px-6">
-          {/* Back Button */}
-          <button
-            onClick={() => router.push('/')}
-            className="text-blue-600 hover:text-blue-800 font-medium mb-6 flex items-center gap-2 transition-all"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Search
-          </button>
-
-          {/* HERO SECTION */}
-          <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 grid md:grid-cols-2 gap-8 items-center">
-            {/* Left - Coin Info */}
-            <div className="flex items-center gap-6">
-              {coin.logo ? (
-                <img 
-                  src={coin.logo} 
-                  alt={coin.name} 
-                  className="w-28 h-28 rounded-full shadow-lg" 
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-28 h-28 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-                  {coin.symbol?.substring(0, 2) || '?'}
-                </div>
-              )}
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-5xl font-bold text-gray-900">{coin.name}</h1>
-                  <button
-                    onClick={toggleFavorite}
-                    className="text-3xl hover:scale-125 transition-transform"
-                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    {isFavorite ? '⭐' : '☆'}
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-2xl text-gray-600">{coin.symbol}</span>
-                  {coin.cmc_rank && (
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                      Rank #{coin.cmc_rank}
-                    </span>
-                  )}
-                  {coin.category && (
-                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                      {coin.category}
-                    </span>
-                  )}
-                </div>
-              </div>
+<div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
+  <div className="max-w-6xl mx-auto px-6">
+    {/* COMBINED HERO + MARKET STATS SECTION */}
+    <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
+      {/* Top Row - Coin Info & Price */}
+      <div className="grid md:grid-cols-2 gap-8 items-center mb-8">
+        {/* Left - Coin Info */}
+        <div className="flex items-center gap-6">
+          {coin.logo ? (
+            <img 
+              src={coin.logo} 
+              alt={coin.name} 
+              className="w-28 h-28 rounded-full shadow-lg" 
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-28 h-28 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg">
+              {coin.symbol?.substring(0, 2) || '?'}
             </div>
-
-            {/* Right - Price Info */}
-            <div>
-              {coin.price && (
-                <>
-                  <p className="text-gray-600 text-sm font-medium mb-1">Current Price</p>
-                  <p className="text-5xl font-bold text-green-600 mb-4">{coinPrice}</p>
-                </>
+          )}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-5xl font-bold text-gray-900">{coin.name}</h1>
+              <button
+                onClick={toggleFavorite}
+                className="text-3xl hover:scale-125 transition-transform"
+                title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              >
+                {isFavorite ? '⭐' : '☆'}
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-2xl text-gray-600">{coin.symbol}</span>
+              {coin.cmc_rank && (
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  Rank #{coin.cmc_rank}
+                </span>
               )}
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { key: 'percent_change_1h', label: '1h' },
-                  { key: 'percent_change_24h', label: '24h' },
-                  { key: 'percent_change_7d', label: '7d' }
-                ].map(({ key, label }) =>
-                  coin[key] !== null && coin[key] !== undefined ? (
-                    <div key={key}>
-                      <p className="text-xs text-gray-500 mb-1">{label}</p>
-                      <p
-                        className={`font-bold text-lg ${
-                          coin[key] >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {coin[key] >= 0 ? '▲' : '▼'}{' '}
-                        {parseFloat(coin[key]).toFixed(2)}%
-                      </p>
-                    </div>
-                  ) : null
-                )}
-              </div>
-              {coin.last_updated && (
-                <p className="text-gray-500 text-xs mt-4">
-                  Last updated: {new Date(coin.last_updated).toLocaleString()}
-                </p>
+              {coin.category && (
+                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {coin.category}
+                </span>
               )}
             </div>
           </div>
+        </div>
 
-          {/* MARKET STATS */}
-          {(coin.market_cap || coin.volume_24h) && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">📊 Market Statistics</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {coin.market_cap && (
-                  <StatCard
-                    label="Market Cap"
-                    value={formatLargeNumber(coin.market_cap)}
-                    subtext={marketDominance ? `${marketDominance}% dominance` : null}
-                  />
-                )}
-                {coin.volume_24h && (
-                  <StatCard
-                    label="24h Volume"
-                    value={formatLargeNumber(coin.volume_24h)}
-                    subtext={coin.market_cap ? `${((coin.volume_24h / coin.market_cap) * 100).toFixed(1)}% of market cap` : null}
-                  />
-                )}
-                {coin.circulating_supply && (
-                  <StatCard
-                    label="Circulating Supply"
-                    value={`${parseFloat(coin.circulating_supply).toLocaleString(undefined, {
-                      maximumFractionDigits: 0
-                    })}`}
-                    subtext={coin.symbol}
-                  />
-                )}
-                {coin.total_supply && (
-                  <StatCard
-                    label="Total Supply"
-                    value={`${parseFloat(coin.total_supply).toLocaleString(undefined, {
-                      maximumFractionDigits: 0
-                    })}`}
-                    subtext={coin.symbol}
-                  />
-                )}
-                {coin.max_supply && (
-                  <StatCard
-                    label="Max Supply"
-                    value={`${parseFloat(coin.max_supply).toLocaleString(undefined, {
-                      maximumFractionDigits: 0
-                    })}`}
-                    subtext={coin.symbol}
-                  />
-                )}
-                {coin.cmc_rank && (
-                  <StatCard 
-                    label="CoinMarketCap Rank" 
-                    value={`#${coin.cmc_rank}`}
-                  />
-                )}
-                {coin.num_market_pairs && (
-                  <StatCard 
-                    label="Trading Pairs" 
-                    value={coin.num_market_pairs}
-                  />
-                )}
-              </div>
-            </div>
+        {/* Right - Price Info */}
+        <div>
+          {coin.price && (
+            <>
+              <p className="text-gray-600 text-sm font-medium mb-1">Current Price</p>
+              <p className="text-5xl font-bold text-green-600 mb-4">{coinPrice}</p>
+            </>
           )}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { key: 'percent_change_1h', label: '1h' },
+              { key: 'percent_change_24h', label: '24h' },
+              { key: 'percent_change_7d', label: '7d' }
+            ].map(({ key, label }) =>
+              coin[key] !== null && coin[key] !== undefined ? (
+                <div key={key}>
+                  <p className="text-xs text-gray-500 mb-1">{label}</p>
+                  <p
+                    className={`font-bold text-lg ${
+                      coin[key] >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {coin[key] >= 0 ? '▲' : '▼'}{' '}
+                    {parseFloat(coin[key]).toFixed(2)}%
+                  </p>
+                </div>
+              ) : null
+            )}
+          </div>
+          {coin.last_updated && (
+            <p className="text-gray-500 text-xs mt-4">
+              Last updated: {new Date(coin.last_updated).toLocaleString()}
+            </p>
+          )}
+        </div>
+      </div>
 
-          {/* ABOUT */}
-          {coin.description && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">ℹ️ About {coin.name}</h2>
-              <p className="text-gray-700 leading-relaxed text-lg">{coin.description}</p>
-              {coin.date_added && (
-                <p className="text-gray-500 text-sm mt-4">
-                  Added to CoinMarketCap: {formatDate(coin.date_added)}
-                </p>
-              )}
-            </div>
-          )}
+      {/* Market Stats Grid - Below Hero */}
+      {(coin.market_cap || coin.volume_24h) && (
+        <div className="border-t pt-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {coin.market_cap && (
+              <StatCard
+                label="Market Cap"
+                value={formatLargeNumber(coin.market_cap)}
+                subtext={marketDominance ? `${marketDominance}% dominance` : null}
+              />
+            )}
+            {coin.volume_24h && (
+              <StatCard
+                label="24h Volume"
+                value={formatLargeNumber(coin.volume_24h)}
+                subtext={coin.market_cap ? `${((coin.volume_24h / coin.market_cap) * 100).toFixed(1)}% of market cap` : null}
+              />
+            )}
+            {coin.circulating_supply && (
+              <StatCard
+                label="Circulating Supply"
+                value={`${parseFloat(coin.circulating_supply).toLocaleString(undefined, {
+                  maximumFractionDigits: 0
+                })}`}
+                subtext={coin.symbol}
+              />
+            )}
+            {coin.total_supply && (
+              <StatCard
+                label="Total Supply"
+                value={`${parseFloat(coin.total_supply).toLocaleString(undefined, {
+                  maximumFractionDigits: 0
+                })}`}
+                subtext={coin.symbol}
+              />
+            )}
+            {coin.max_supply && (
+              <StatCard
+                label="Max Supply"
+                value={`${parseFloat(coin.max_supply).toLocaleString(undefined, {
+                  maximumFractionDigits: 0
+                })}`}
+                subtext={coin.symbol}
+              />
+            )}
+            {coin.cmc_rank && (
+              <StatCard 
+                label="CMC Rank" 
+                value={`#${coin.cmc_rank}`}
+              />
+            )}
+            {coin.num_market_pairs && (
+              <StatCard 
+                label="Trading Pairs" 
+                value={coin.num_market_pairs}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* ABOUT SECTION - remains the same */}
+    {coin.description && (
+      <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
+        <h2 className="text-3xl font-bold mb-4 text-gray-900">ℹ️ About {coin.name}</h2>
+        <p className="text-gray-700 leading-relaxed text-lg">{coin.description}</p>
+        {coin.date_added && (
+          <p className="text-gray-500 text-sm mt-4">
+            Added to CoinMarketCap: {formatDate(coin.date_added)}
+          </p>
+        )}
+      </div>
+    )}
+
+
 
           {/* RESOURCES */}
           {(coin.urls_website || coin.urls_technical_doc || coin.urls_source_code || coin.urls_explorer) && (
