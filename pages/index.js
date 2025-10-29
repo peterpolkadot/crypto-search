@@ -11,25 +11,27 @@ export async function getServerSideProps(context) {
   const limit = 100;
   const offset = (page - 1) * limit;
 
-  const { data: coins, error } = await supabase
-   .from('coin_full')
-    .select('*')
+  // Fetch from your joined view instead of raw table
+  const { data: coins, error, count } = await supabase
+    .from('coin_full')
+    .select('*', { count: 'exact' })
     .order('market_cap', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
     console.error('Error fetching coins:', error);
-    return { props: { coins: [], page } };
+    return { props: { coins: [], page, totalCount: 0 } };
   }
 
-  const { count } = await supabase
-   .from('coin_full')
-    .select('*', { count: 'exact', head: true });
-
   return {
-    props: { coins: coins || [], page, totalCount: count || 0 },
+    props: {
+      coins: coins || [],
+      page,
+      totalCount: count || 0,
+    },
   };
 }
+
 
 // ───────────────────────────────
 // Home Component
