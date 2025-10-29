@@ -24,15 +24,30 @@ const formatPrice = (price) => {
   }
 };
 
+const formatLargeNumber = (num) => {
+  if (!num) return 'N/A';
+  const value = parseFloat(num);
+  
+  if (value >= 1e12) {
+    return `$${(value / 1e12).toFixed(2)}T`;
+  } else if (value >= 1e9) {
+    return `$${(value / 1e9).toFixed(2)}B`;
+  } else if (value >= 1e6) {
+    return `$${(value / 1e6).toFixed(2)}M`;
+  } else {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+};
+
 // ───────────────────────────────
-// SSR: Fetch Top 100 Coins
+// SSR: Fetch Top 100 Coins + Stats
 // ───────────────────────────────
 export async function getServerSideProps(context) {
   const page = parseInt(context.query.page || '1', 10);
   const limit = 100;
   const offset = (page - 1) * limit;
 
-  // Fetch from coins table
+  // Fetch main coin list
   const { data: coinsData, error } = await supabase
     .from('coins')
     .select('*')
@@ -42,7 +57,7 @@ export async function getServerSideProps(context) {
 
   if (error) {
     console.error('Error fetching coins:', error);
-    return { props: { coins: [], page, totalCount: 0 } };
+    return { props: { coins: [], page, totalCount: 0, stats: null } };
   }
 
   // Fetch metadata for these coins
@@ -52,7 +67,7 @@ export async function getServerSideProps(context) {
     .select('id, logo, description')
     .in('id', coinIds);
 
-  // Create a map for quick lookup ok
+  // Create a map for quick lookup
   const metaMap = {};
   (metaData || []).forEach(meta => {
     metaMap[meta.id] = meta;
@@ -72,6 +87,32 @@ export async function getServerSideProps(context) {
     logo: metaMap[coin.id]?.logo || null,
   }));
 
+  // Fetch stats data (top gainers, losers, etc.)
+  const { data: allCoins } = await supabase
+    .from('coins')
+    .select('id, name, symbol, slug, price, percent_change_24h, volume_24h, market_cap, cmc_rank')
+    .not('cmc_rank', 'is', null)
+    .not('percent_change_24h', 'is', null)
+    .not('volume_24h', 'is', null)
+    .limit(500); // Get top 500 for stats
+
+  const stats = {
+    topGainers: (allCoins || [])
+      .filter(c => c.percent_change_24h > 0)
+      .sort((a, b) => b.percent_change_24h - a.percent_change_24h)
+      .slice(0, 5),
+    topLosers: (allCoins || [])
+      .filter(c => c.percent_change_24h < 0)
+      .sort((a, b) => a.percent_change_24h - b.percent_change_24h)
+      .slice(0, 5),
+    topVolume: (allCoins || [])
+      .sort((a, b) => b.volume_24h - a.volume_24h)
+      .slice(0, 5),
+    topMarketCap: (allCoins || [])
+      .sort((a, b) => b.market_cap - a.market_cap)
+      .slice(0, 5),
+  };
+
   const { count } = await supabase
     .from('coins')
     .select('*', { count: 'exact', head: true })
@@ -81,7 +122,8 @@ export async function getServerSideProps(context) {
     props: { 
       coins, 
       page, 
-      totalCount: count || 0 
+      totalCount: count || 0,
+      stats
     },
   };
 }
@@ -89,12 +131,14 @@ export async function getServerSideProps(context) {
 // ───────────────────────────────
 // Home Component
 // ───────────────────────────────
-export default function Home({ coins, page, totalCount }) {
+export default function Home({ coins, page, totalCount, stats }) {
   const [search, setSearch] = useState('');
   const [filteredCoins, setFilteredCoins] = useState(coins);
+  const [sortedCoins, setSortedCoins] = useState(coins);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: 'rank', direction: 'asc' });
   const router = useRouter();
   const limit = 100;
   const totalPages = Math.ceil(totalCount / limit);
@@ -138,6 +182,53 @@ export default function Home({ coins, page, totalCount }) {
     }
   }, [search, coins]);
 
+  // Sorting logic
+  useEffect(() => {
+    let sorted = [...filteredCoins];
+    
+    if (sortConfig.key) {
+      sorted.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+
+        // Handle null/undefined
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        // Convert to numbers for numeric columns
+        if (['rank', 'price_usd', 'chg_24h', 'market_cap', 'volume_24h'].includes(sortConfig.key)) {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+
+        if (aVal < bVal) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    setSortedCoins(sorted);
+  }, [filteredCoins, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) {
+      return '↕️';
+    }
+    return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
+
   const goToPage = (newPage) => {
     router.push(`/?page=${newPage}`);
   };
@@ -157,7 +248,7 @@ export default function Home({ coins, page, totalCount }) {
       if (volumeToMcap > 0.3) {
         return (
           <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-            🔥 Trending
+            🔥 Hot
           </span>
         );
       }
@@ -182,7 +273,7 @@ export default function Home({ coins, page, totalCount }) {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-10">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
@@ -195,6 +286,43 @@ export default function Home({ coins, page, totalCount }) {
               Tracking {totalCount.toLocaleString()} cryptocurrencies
             </p>
           </div>
+
+          {/* Mini Stats Tables */}
+          {stats && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* Top Gainers */}
+              <MiniStatsTable 
+                title="🚀 Top Gainers (24h)" 
+                coins={stats.topGainers} 
+                highlightKey="percent_change_24h"
+                router={router}
+              />
+              
+              {/* Top Losers */}
+              <MiniStatsTable 
+                title="📉 Top Losers (24h)" 
+                coins={stats.topLosers} 
+                highlightKey="percent_change_24h"
+                router={router}
+              />
+              
+              {/* Most Traded */}
+              <MiniStatsTable 
+                title="💎 Most Traded (24h)" 
+                coins={stats.topVolume} 
+                highlightKey="volume_24h"
+                router={router}
+              />
+              
+              {/* Highest Market Cap */}
+              <MiniStatsTable 
+                title="👑 Highest Market Cap" 
+                coins={stats.topMarketCap} 
+                highlightKey="market_cap"
+                router={router}
+              />
+            </div>
+          )}
 
           {/* Search Bar with Suggestions */}
           <div className="relative mb-8">
@@ -264,17 +392,48 @@ export default function Home({ coins, page, totalCount }) {
                 <thead className="bg-gradient-to-r from-blue-100 to-purple-100">
                   <tr>
                     <th className="text-left px-4 py-4 text-gray-700 text-sm font-semibold">⭐</th>
-                    <th className="text-left px-4 py-4 text-gray-700 text-sm font-semibold">#</th>
-                    <th className="text-left px-6 py-4 text-gray-700 text-sm font-semibold">Coin</th>
+                    <th 
+                      className="text-left px-4 py-4 text-gray-700 text-sm font-semibold cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('rank')}
+                    >
+                      # {getSortIcon('rank')}
+                    </th>
+                    <th 
+                      className="text-left px-6 py-4 text-gray-700 text-sm font-semibold cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('name')}
+                    >
+                      Coin {getSortIcon('name')}
+                    </th>
                     <th className="text-left px-4 py-4 text-gray-700 text-sm font-semibold">Symbol</th>
-                    <th className="text-right px-6 py-4 text-gray-700 text-sm font-semibold">Price</th>
-                    <th className="text-right px-6 py-4 text-gray-700 text-sm font-semibold">24h %</th>
-                    <th className="text-right px-6 py-4 text-gray-700 text-sm font-semibold hidden md:table-cell">Market Cap</th>
+                    <th 
+                      className="text-right px-6 py-4 text-gray-700 text-sm font-semibold cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('price_usd')}
+                    >
+                      Price {getSortIcon('price_usd')}
+                    </th>
+                    <th 
+                      className="text-right px-6 py-4 text-gray-700 text-sm font-semibold cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('chg_24h')}
+                    >
+                      24h % {getSortIcon('chg_24h')}
+                    </th>
+                    <th 
+                      className="text-right px-6 py-4 text-gray-700 text-sm font-semibold hidden md:table-cell cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('market_cap')}
+                    >
+                      Market Cap {getSortIcon('market_cap')}
+                    </th>
+                    <th 
+                      className="text-right px-6 py-4 text-gray-700 text-sm font-semibold hidden lg:table-cell cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() => requestSort('volume_24h')}
+                    >
+                      Volume (24h) {getSortIcon('volume_24h')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCoins.length > 0 ? (
-                    filteredCoins.map((coin) => (
+                  {sortedCoins.length > 0 ? (
+                    sortedCoins.map((coin) => (
                       <tr
                         key={coin.id}
                         className="border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all cursor-pointer"
@@ -334,16 +493,17 @@ export default function Home({ coins, page, totalCount }) {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right text-gray-700 font-medium hidden md:table-cell">
-                          {coin.market_cap
-                            ? `$${(parseFloat(coin.market_cap) / 1e9).toFixed(2)}B`
-                            : 'N/A'}
+                          {formatLargeNumber(coin.market_cap)}
+                        </td>
+                        <td className="px-6 py-4 text-right text-gray-700 font-medium hidden lg:table-cell">
+                          {formatLargeNumber(coin.volume_24h)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="px-6 py-10 text-center text-gray-500"
                       >
                         {search ? (
@@ -409,5 +569,61 @@ export default function Home({ coins, page, totalCount }) {
         </div>
       </div>
     </>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   Mini Stats Table Component
+──────────────────────────────────────────────── */
+function MiniStatsTable({ title, coins, highlightKey, router }) {
+  const formatValue = (coin, key) => {
+    if (key === 'percent_change_24h') {
+      const val = parseFloat(coin[key]);
+      return (
+        <span className={val >= 0 ? 'text-green-600' : 'text-red-600'}>
+          {val >= 0 ? '▲' : '▼'} {val.toFixed(2)}%
+        </span>
+      );
+    }
+    if (key === 'volume_24h' || key === 'market_cap') {
+      return formatLargeNumber(coin[key]);
+    }
+    return coin[key];
+  };
+
+  const formatLargeNumber = (num) => {
+    if (!num) return 'N/A';
+    const value = parseFloat(num);
+    
+    if (value >= 1e9) {
+      return `$${(value / 1e9).toFixed(2)}B`;
+    } else if (value >= 1e6) {
+      return `$${(value / 1e6).toFixed(2)}M`;
+    } else {
+      return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-shadow">
+      <h3 className="text-sm font-bold text-gray-900 mb-3">{title}</h3>
+      <div className="space-y-2">
+        {coins.map((coin, idx) => (
+          <div
+            key={coin.id}
+            onClick={() => router.push(`/coins/${coin.symbol}`)}
+            className="flex items-center justify-between p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all"
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-gray-400 text-xs font-medium">{idx + 1}</span>
+              <span className="text-gray-900 font-medium text-sm truncate">{coin.symbol}</span>
+            </div>
+            <div className="text-right text-xs font-bold">
+              {formatValue(coin, highlightKey)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
