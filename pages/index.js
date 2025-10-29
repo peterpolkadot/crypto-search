@@ -4,29 +4,17 @@ import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
 
 // ───────────────────────────────
-// SSR: Fetch Top 100 Coins (JOIN both tables)
+// SSR: Fetch Top 100 Coins
 // ───────────────────────────────
 export async function getServerSideProps(context) {
   const page = parseInt(context.query.page || '1', 10);
   const limit = 100;
   const offset = (page - 1) * limit;
 
-  // Join coins (market data) with coins_meta (logos, descriptions)
-  const { data: coins, error } = await supabase
+  // Fetch from coins table
+  const { data: coinsData, error } = await supabase
     .from('coins')
-    .select(`
-      id,
-      name,
-      symbol,
-      slug,
-      cmc_rank,
-      price,
-      percent_change_24h,
-      coins_meta (
-        logo,
-        description
-      )
-    `)
+    .select('*')
     .not('cmc_rank', 'is', null)
     .order('cmc_rank', { ascending: true })
     .range(offset, offset + limit - 1);
@@ -36,14 +24,29 @@ export async function getServerSideProps(context) {
     return { props: { coins: [], page, totalCount: 0 } };
   }
 
-  // Flatten the data structure
-  const flattenedCoins = (coins || []).map(coin => ({
-    ...coin,
-    logo: coin.coins_meta?.[0]?.logo || null,
-    description: coin.coins_meta?.[0]?.description || null,
+  // Fetch metadata for these coins
+  const coinIds = coinsData.map(c => c.id);
+  const { data: metaData } = await supabase
+    .from('coins_meta')
+    .select('id, logo, description')
+    .in('id', coinIds);
+
+  // Create a map for quick lookup
+  const metaMap = {};
+  (metaData || []).forEach(meta => {
+    metaMap[meta.id] = meta;
+  });
+
+  // Merge the data
+  const coins = coinsData.map(coin => ({
+    id: coin.id,
+    name: coin.name,
+    symbol: coin.symbol,
+    slug: coin.slug,
     rank: coin.cmc_rank,
     price_usd: coin.price,
-    chg_24h: coin.percent_change_24h
+    chg_24h: coin.percent_change_24h,
+    logo: metaMap[coin.id]?.logo || null,
   }));
 
   const { count } = await supabase
@@ -53,7 +56,7 @@ export async function getServerSideProps(context) {
 
   return {
     props: { 
-      coins: flattenedCoins, 
+      coins, 
       page, 
       totalCount: count || 0 
     },
@@ -70,12 +73,10 @@ export default function Home({ coins, page, totalCount }) {
   const limit = 100;
   const totalPages = Math.ceil(totalCount / limit);
 
-  // Smooth scroll to top on pagination change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Filter coins client-side
   useEffect(() => {
     if (!search.trim()) {
       setFilteredCoins(coins);
@@ -93,6 +94,11 @@ export default function Home({ coins, page, totalCount }) {
 
   const goToPage = (newPage) => {
     router.push(`/?page=${newPage}`);
+  };
+
+  // Route to /coins/{SYMBOL}-{ID} for unique identification
+  const getCoinUrl = (coin) => {
+    return `/coins/${coin.symbol}-${coin.id}`;
   };
 
   return (
@@ -160,7 +166,7 @@ export default function Home({ coins, page, totalCount }) {
                     <tr
                       key={coin.id}
                       className="border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all cursor-pointer"
-                      onClick={() => router.push(`/coins/${coin.slug}`)}
+                      onClick={() => router.push(getCoinUrl(coin))}
                     >
                       <td className="px-6 py-4 text-gray-600 font-medium">{coin.rank}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
@@ -169,6 +175,9 @@ export default function Home({ coins, page, totalCount }) {
                             src={coin.logo}
                             alt={coin.name}
                             className="w-8 h-8 rounded-full"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
@@ -184,7 +193,7 @@ export default function Home({ coins, page, totalCount }) {
                         {coin.price_usd
                           ? `$${parseFloat(coin.price_usd).toLocaleString(undefined, {
                               minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
+                              maximumFractionDigits: 6,
                             })}`
                           : 'N/A'}
                       </td>
