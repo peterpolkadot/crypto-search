@@ -3,54 +3,27 @@ import Head from 'next/head';
 import { supabase } from '../../lib/supabase';
 
 /* ────────────────────────────────────────────────
-   Server-Side Fetch (by TICKER-ID or TICKER)
+   Server-Side Fetch (Smart symbol matching)
 ──────────────────────────────────────────────── */
 export async function getServerSideProps(context) {
-  const { ticker } = context.params;
-  
-  let coinId = null;
-  let symbol = ticker;
+  const { symbol } = context.params;
 
-  // Check if format is SYMBOL-ID (e.g., BTC-1)
-  if (ticker.includes('-')) {
-    const parts = ticker.split('-');
-    symbol = parts[0];
-    coinId = parseInt(parts[parts.length - 1], 10);
-  }
+  // Get all coins with this symbol, ordered by:
+  // 1. Best rank (lowest cmc_rank = most popular)
+  // 2. Then by oldest (lowest id = original)
+  const { data: coins, error } = await supabase
+    .from('coins')
+    .select('*')
+    .ilike('symbol', symbol)
+    .order('cmc_rank', { ascending: true, nullsLast: true })
+    .order('id', { ascending: true })
+    .limit(1);
 
-  let coin = null;
-
-  // If we have an ID, fetch by ID (most accurate)
-  if (coinId) {
-    const { data: coins, error } = await supabase
-      .from('coins')
-      .select('*')
-      .eq('id', coinId)
-      .limit(1);
-
-    if (!error && coins && coins.length > 0) {
-      coin = coins[0];
-    }
-  }
-
-  // If no coin yet, try by symbol and get highest ranked one
-  if (!coin) {
-    const { data: coins, error } = await supabase
-      .from('coins')
-      .select('*')
-      .ilike('symbol', symbol)
-      .not('cmc_rank', 'is', null)
-      .order('cmc_rank', { ascending: true })
-      .limit(1);
-
-    if (!error && coins && coins.length > 0) {
-      coin = coins[0];
-    }
-  }
-
-  if (!coin) {
+  if (error || !coins || coins.length === 0) {
     return { props: { coin: null } };
   }
+
+  const coin = coins[0];
 
   // Fetch metadata
   const { data: meta } = await supabase
@@ -97,7 +70,7 @@ export default function CoinDetail({ coin }) {
   const coinPrice = coin.price
     ? parseFloat(coin.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
     : 'N/A';
-  const pageUrl = `https://crypto-search2.vercel.app/coins/${coin.symbol}-${coin.id}`;
+  const pageUrl = `https://www.01x2.com/coins/${coin.symbol}`;
 
   /* JSON-LD Schema */
   const sameAsLinks = [
@@ -307,4 +280,55 @@ export default function CoinDetail({ coin }) {
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
               <h2 className="text-3xl font-bold mb-6 text-gray-900">Social & Community</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {parseUrls
+                {parseUrls(coin.urls_twitter).length > 0 && (
+                  <SimpleLinkCard title="🐦 Twitter" urls={parseUrls(coin.urls_twitter)} />
+                )}
+                {parseUrls(coin.urls_reddit).length > 0 && (
+                  <SimpleLinkCard title="👽 Reddit" urls={parseUrls(coin.urls_reddit)} />
+                )}
+                {parseUrls(coin.urls_message_board).length > 0 && (
+                  <SimpleLinkCard title="📋 Message Board" urls={parseUrls(coin.urls_message_board)} />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   Helper Components
+──────────────────────────────────────────────── */
+function StatCard({ label, value }) {
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
+      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
+      <p className="font-semibold text-gray-900 text-base break-all">{value}</p>
+    </div>
+  );
+}
+
+function SimpleLinkCard({ title, urls, numbered = false }) {
+  if (!urls || urls.length === 0) return null;
+  const mainLink = urls[0];
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-5 hover:shadow-md transition-shadow">
+      <h3 className="font-bold text-gray-900 mb-3 text-lg">
+        <a href={mainLink} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-700">
+          {title}
+        </a>
+      </h3>
+      {numbered && (
+        <p className="text-sm text-blue-600 flex flex-wrap gap-2">
+          {urls.map((url, i) => (
+            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              [{i + 1}]
+            </a>
+          ))}
+        </p>
+      )}
+    </div>
+  );
+}
