@@ -1,25 +1,71 @@
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { supabase } from '../../lib/supabase';
-import { marked } from 'marked';
 
 /* ────────────────────────────────────────────────
-   Server-Side Fetch
+   Server-Side Fetch (by TICKER-ID or TICKER)
 ──────────────────────────────────────────────── */
 export async function getServerSideProps(context) {
-  const { symbol } = context.params;
-  const { data: coins, error } = await supabase
-    .from('coins')
-    .select('*')
-    .ilike('symbol', symbol.toUpperCase());
+  const { ticker } = context.params;
+  
+  let coinId = null;
+  let symbol = ticker;
 
-  if (error || !coins || coins.length === 0) {
+  // Check if format is SYMBOL-ID (e.g., BTC-1)
+  if (ticker.includes('-')) {
+    const parts = ticker.split('-');
+    symbol = parts[0];
+    coinId = parseInt(parts[parts.length - 1], 10);
+  }
+
+  let coin = null;
+
+  // If we have an ID, fetch by ID (most accurate)
+  if (coinId) {
+    const { data: coins, error } = await supabase
+      .from('coins')
+      .select('*')
+      .eq('id', coinId)
+      .limit(1);
+
+    if (!error && coins && coins.length > 0) {
+      coin = coins[0];
+    }
+  }
+
+  // If no coin yet, try by symbol and get highest ranked one
+  if (!coin) {
+    const { data: coins, error } = await supabase
+      .from('coins')
+      .select('*')
+      .ilike('symbol', symbol)
+      .not('cmc_rank', 'is', null)
+      .order('cmc_rank', { ascending: true })
+      .limit(1);
+
+    if (!error && coins && coins.length > 0) {
+      coin = coins[0];
+    }
+  }
+
+  if (!coin) {
     return { props: { coin: null } };
   }
 
-  const coin = coins[0];
-  if (coin.news_markdown) coin.news_html = marked(coin.news_markdown);
-  return { props: { coin } };
+  // Fetch metadata
+  const { data: meta } = await supabase
+    .from('coins_meta')
+    .select('*')
+    .eq('id', coin.id)
+    .limit(1);
+
+  // Merge data
+  const mergedCoin = {
+    ...coin,
+    ...(meta && meta[0] ? meta[0] : {}),
+  };
+
+  return { props: { coin: mergedCoin } };
 }
 
 /* ────────────────────────────────────────────────
@@ -42,17 +88,16 @@ export default function CoinDetail({ coin }) {
     );
   }
 
-  const parseUrls = str => (!str ? [] : str.split(',').map(u => u.trim()).filter(Boolean));
-  const parseTags = str => (!str ? [] : str.split(',').map(t => t.trim()).filter(Boolean));
+  const parseUrls = str => (!str ? [] : String(str).split(',').map(u => u.trim()).filter(Boolean));
   const formatDate = d =>
     !d
       ? 'N/A'
       : new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const coinPrice = coin.price_usd
-    ? parseFloat(coin.price_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const coinPrice = coin.price
+    ? parseFloat(coin.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
     : 'N/A';
-  const pageUrl = `https://crypto-search2.vercel.app/coins/${String(coin.symbol).toLowerCase()}`;
+  const pageUrl = `https://crypto-search2.vercel.app/coins/${coin.symbol}-${coin.id}`;
 
   /* JSON-LD Schema */
   const sameAsLinks = [
@@ -68,7 +113,7 @@ export default function CoinDetail({ coin }) {
     description: coin.description || '',
     url: pageUrl,
     image: coin.logo || '',
-    price: coin.price_usd ? parseFloat(coin.price_usd) : undefined,
+    price: coin.price ? parseFloat(coin.price) : undefined,
     priceCurrency: 'USD',
     marketCap: coin.market_cap ? parseFloat(coin.market_cap) : undefined,
     totalSupply: coin.total_supply ? parseFloat(coin.total_supply) : undefined,
@@ -83,7 +128,7 @@ export default function CoinDetail({ coin }) {
     <>
       <Head>
         <title>
-          {coin.name} ({coin.symbol}) Price Today: ${coinPrice} | Live Market Data & Charts
+          {coin.name} ({coin.symbol}) Price Today: ${coinPrice} | Live Market Data
         </title>
         <meta
           name="description"
@@ -136,9 +181,9 @@ export default function CoinDetail({ coin }) {
                 <h1 className="text-5xl font-bold text-gray-900">{coin.name}</h1>
                 <div className="flex flex-wrap items-center gap-3 mt-2">
                   <span className="text-2xl text-gray-600">{coin.symbol}</span>
-                  {coin.rank && (
+                  {coin.cmc_rank && (
                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                      Rank #{coin.rank}
+                      Rank #{coin.cmc_rank}
                     </span>
                   )}
                   {coin.category && (
@@ -152,24 +197,28 @@ export default function CoinDetail({ coin }) {
 
             {/* Right */}
             <div>
-              {coin.price_usd && (
+              {coin.price && (
                 <>
                   <p className="text-gray-600 text-sm font-medium mb-1">Current Price</p>
                   <p className="text-5xl font-bold text-green-600">${coinPrice}</p>
                 </>
               )}
               <div className="grid grid-cols-3 gap-4 mt-4">
-                {['chg_1h', 'chg_24h', 'chg_7d'].map((chg, i) =>
-                  coin[chg] !== null && coin[chg] !== undefined ? (
-                    <div key={i}>
-                      <p className="text-xs text-gray-500 mb-1">{chg.replace('chg_', '')} Change</p>
+                {[
+                  { key: 'percent_change_1h', label: '1h' },
+                  { key: 'percent_change_24h', label: '24h' },
+                  { key: 'percent_change_7d', label: '7d' }
+                ].map(({ key, label }) =>
+                  coin[key] !== null && coin[key] !== undefined ? (
+                    <div key={key}>
+                      <p className="text-xs text-gray-500 mb-1">{label} Change</p>
                       <p
                         className={`font-bold ${
-                          coin[chg] >= 0 ? 'text-green-600' : 'text-red-600'
+                          coin[key] >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {coin[chg] >= 0 ? '+' : ''}
-                        {parseFloat(coin[chg]).toFixed(2)}%
+                        {coin[key] >= 0 ? '+' : ''}
+                        {parseFloat(coin[key]).toFixed(2)}%
                       </p>
                     </div>
                   ) : null
@@ -178,7 +227,7 @@ export default function CoinDetail({ coin }) {
             </div>
           </div>
 
-          {/* MARKET + TECH early */}
+          {/* MARKET STATS */}
           {(coin.market_cap || coin.volume_24h) && (
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
               <h2 className="text-3xl font-bold mb-6 text-gray-900">Market Statistics</h2>
@@ -219,23 +268,7 @@ export default function CoinDetail({ coin }) {
                     })} ${coin.symbol}`}
                   />
                 )}
-                {coin.rank && <StatCard label="CoinMarketCap Rank" value={`#${coin.rank}`} />}
-              </div>
-            </div>
-          )}
-
-          {(coin.category || coin.platform || coin.contract_address) && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">Technical Details</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {coin.category && <InfoCard label="Category" value={coin.category} />}
-                {coin.platform && <InfoCard label="Platform" value={coin.platform} />}
-                {coin.contract_address && (
-                  <InfoCard label="Contract Address" value={coin.contract_address} mono />
-                )}
-                {coin.date_added && <InfoCard label="Date Added to CMC" value={formatDate(coin.date_added)} />}
-                {coin.date_launched && <InfoCard label="Launch Date" value={formatDate(coin.date_launched)} />}
-                {coin.id && <InfoCard label="CMC ID" value={coin.id} />}
+                {coin.cmc_rank && <StatCard label="CoinMarketCap Rank" value={`#${coin.cmc_rank}`} />}
               </div>
             </div>
           )}
@@ -248,7 +281,7 @@ export default function CoinDetail({ coin }) {
             </div>
           )}
 
-          {/* RESOURCES (clickable titles / numbered explorers) */}
+          {/* RESOURCES */}
           {(coin.urls_website || coin.urls_technical_doc || coin.urls_source_code || coin.urls_explorer) && (
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
               <h2 className="text-3xl font-bold mb-6 text-gray-900">Official Resources</h2>
@@ -274,93 +307,4 @@ export default function CoinDetail({ coin }) {
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
               <h2 className="text-3xl font-bold mb-6 text-gray-900">Social & Community</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {parseUrls(coin.urls_twitter).length > 0 && (
-                  <SimpleLinkCard title="🐦 Twitter" urls={parseUrls(coin.urls_twitter)} />
-                )}
-                {parseUrls(coin.urls_reddit).length > 0 && (
-                  <SimpleLinkCard title="👽 Reddit" urls={parseUrls(coin.urls_reddit)} />
-                )}
-                {parseUrls(coin.urls_message_board).length > 0 && (
-                  <SimpleLinkCard title="📋 Message Board" urls={parseUrls(coin.urls_message_board)} />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAGS */}
-          {parseTags(coin.tags).length > 0 && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">Tags</h2>
-              <div className="flex flex-wrap gap-2">
-                {parseTags(coin.tags).map((tag, i) => (
-                  <span
-                    key={i}
-                    className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium hover:shadow-md transition-shadow"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI Overview */}
-          {coin.news_html && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">AI-Generated Market Overview</h2>
-              <div
-                className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: coin.news_html }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────────
-   Helper Components
-──────────────────────────────────────────────── */
-function StatCard({ label, value }) {
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
-      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
-      <p className="font-semibold text-gray-900 text-base break-all">{value}</p>
-    </div>
-  );
-}
-
-function InfoCard({ label, value, mono }) {
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
-      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
-      <p className={`font-semibold text-gray-900 ${mono ? 'font-mono text-xs' : 'text-base'} break-all`}>{value}</p>
-    </div>
-  );
-}
-
-/* Simplified link card: title is clickable; explorers numbered */
-function SimpleLinkCard({ title, urls, numbered = false }) {
-  if (!urls || urls.length === 0) return null;
-  const mainLink = urls[0];
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-5 hover:shadow-md transition-shadow">
-      <h3 className="font-bold text-gray-900 mb-3 text-lg">
-        <a href={mainLink} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-700">
-          {title}
-        </a>
-      </h3>
-      {numbered && (
-        <p className="text-sm text-blue-600 flex flex-wrap gap-2">
-          {urls.map((url, i) => (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-              [{i + 1}]
-            </a>
-          ))}
-        </p>
-      )}
-    </div>
-  );
-}
+                {parseUrls
