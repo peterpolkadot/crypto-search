@@ -1,6 +1,43 @@
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+
+// ───────────────────────────────
+// Helper Functions
+// ───────────────────────────────
+const formatPrice = (price) => {
+  if (!price) return 'N/A';
+  const num = parseFloat(price);
+  
+  if (num >= 1) {
+    return `$${num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  } else if (num >= 0.01) {
+    return `$${num.toFixed(4)}`;
+  } else if (num >= 0.00001) {
+    return `$${num.toFixed(8)}`;
+  } else {
+    return `$${num.toExponential(2)}`;
+  }
+};
+
+const formatLargeNumber = (num) => {
+  if (!num) return 'N/A';
+  const value = parseFloat(num);
+  
+  if (value >= 1e12) {
+    return `$${(value / 1e12).toFixed(2)}T`;
+  } else if (value >= 1e9) {
+    return `$${(value / 1e9).toFixed(2)}B`;
+  } else if (value >= 1e6) {
+    return `$${(value / 1e6).toFixed(2)}M`;
+  } else {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+};
 
 /* ────────────────────────────────────────────────
    Server-Side Fetch (Smart symbol matching)
@@ -8,9 +45,7 @@ import { supabase } from '../../lib/supabase';
 export async function getServerSideProps(context) {
   const { symbol } = context.params;
 
-  // Get all coins with this symbol, ordered by:
-  // 1. Best rank (lowest cmc_rank = most popular)
-  // 2. Then by oldest (lowest id = original)
+  // Get all coins with this symbol, ordered by best rank, then oldest
   const { data: coins, error } = await supabase
     .from('coins')
     .select('*')
@@ -46,6 +81,40 @@ export async function getServerSideProps(context) {
 ──────────────────────────────────────────────── */
 export default function CoinDetail({ coin }) {
   const router = useRouter();
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (coin) {
+      const saved = localStorage.getItem('favorites');
+      if (saved) {
+        try {
+          const favorites = JSON.parse(saved);
+          setIsFavorite(favorites.includes(coin.id));
+        } catch (e) {
+          console.error('Error loading favorites:', e);
+        }
+      }
+    }
+  }, [coin]);
+
+  const toggleFavorite = () => {
+    const saved = localStorage.getItem('favorites');
+    let favorites = [];
+    if (saved) {
+      try {
+        favorites = JSON.parse(saved);
+      } catch (e) {
+        favorites = [];
+      }
+    }
+
+    const newFavorites = favorites.includes(coin.id)
+      ? favorites.filter(id => id !== coin.id)
+      : [...favorites, coin.id];
+    
+    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+    setIsFavorite(newFavorites.includes(coin.id));
+  };
 
   if (!coin) {
     return (
@@ -53,7 +122,7 @@ export default function CoinDetail({ coin }) {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Coin Not Found</h1>
           <p className="text-gray-600 mb-6">We couldn't find information for this coin</p>
-          <a href="/" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+          <a href="/" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all">
             Back to Search
           </a>
         </div>
@@ -67,23 +136,27 @@ export default function CoinDetail({ coin }) {
       ? 'N/A'
       : new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const coinPrice = coin.price
-    ? parseFloat(coin.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
-    : 'N/A';
+  const coinPrice = formatPrice(coin.price);
   const pageUrl = `https://www.01x2.com/coins/${coin.symbol}`;
+
+  // Calculate market dominance
+  const marketDominance = coin.market_cap 
+    ? ((parseFloat(coin.market_cap) / 3e12) * 100).toFixed(2) 
+    : null;
 
   /* JSON-LD Schema */
   const sameAsLinks = [
     ...(parseUrls(coin.urls_website) || []),
     ...(parseUrls(coin.urls_twitter) || []),
     ...(parseUrls(coin.urls_reddit) || []),
-  ];
+  ].filter(Boolean);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CryptoCurrency',
     name: coin.name,
     symbol: coin.symbol,
-    description: coin.description || '',
+    description: coin.description || `Live ${coin.name} price and market information`,
     url: pageUrl,
     image: coin.logo || '',
     price: coin.price ? parseFloat(coin.price) : undefined,
@@ -101,13 +174,14 @@ export default function CoinDetail({ coin }) {
     <>
       <Head>
         <title>
-          {coin.name} ({coin.symbol}) Price Today: ${coinPrice} | Live Market Data
+          {coin.name} ({coin.symbol}) Price: {coinPrice} | Live Market Data & Stats
         </title>
         <meta
           name="description"
-          content={`Live ${coin.name} (${coin.symbol}) price today is $${coinPrice}. Explore real-time market cap, trading volume, circulating supply, and performance stats — updated live.`}
+          content={`${coin.name} (${coin.symbol}) live price is ${coinPrice}. View market cap, 24h volume, circulating supply, and real-time price changes. ${coin.description ? coin.description.substring(0, 120) + '...' : ''}`}
         />
-        <meta property="og:title" content={`${coin.name} (${coin.symbol}) - $${coinPrice}`} />
+        <meta name="keywords" content={`${coin.name}, ${coin.symbol}, cryptocurrency, price, market cap, ${coin.category || 'crypto'}`} />
+        <meta property="og:title" content={`${coin.name} (${coin.symbol}) - ${coinPrice}`} />
         <meta
           property="og:description"
           content={coin.description || `Live ${coin.name} price and market information.`}
@@ -116,7 +190,7 @@ export default function CoinDetail({ coin }) {
         <meta property="og:url" content={pageUrl} />
         {coin.logo && <meta property="og:image" content={coin.logo} />}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${coin.name} (${coin.symbol}) - $${coinPrice}`} />
+        <meta name="twitter:title" content={`${coin.name} (${coin.symbol}) - ${coinPrice}`} />
         <meta
           name="twitter:description"
           content={coin.description || `Live ${coin.name} price and market information.`}
@@ -128,10 +202,10 @@ export default function CoinDetail({ coin }) {
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
         <div className="max-w-6xl mx-auto px-6">
-          {/* Back */}
+          {/* Back Button */}
           <button
             onClick={() => router.push('/')}
-            className="text-blue-600 hover:text-blue-800 font-medium mb-6 flex items-center gap-2"
+            className="text-blue-600 hover:text-blue-800 font-medium mb-6 flex items-center gap-2 transition-all"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -139,20 +213,34 @@ export default function CoinDetail({ coin }) {
             Back to Search
           </button>
 
-          {/* HERO SPLIT */}
+          {/* HERO SECTION */}
           <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 grid md:grid-cols-2 gap-8 items-center">
-            {/* Left */}
+            {/* Left - Coin Info */}
             <div className="flex items-center gap-6">
               {coin.logo ? (
-                <img src={coin.logo} alt={coin.name} className="w-28 h-28 rounded-full shadow-lg" />
+                <img 
+                  src={coin.logo} 
+                  alt={coin.name} 
+                  className="w-28 h-28 rounded-full shadow-lg" 
+                  loading="lazy"
+                />
               ) : (
                 <div className="w-28 h-28 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg">
                   {coin.symbol?.substring(0, 2) || '?'}
                 </div>
               )}
               <div>
-                <h1 className="text-5xl font-bold text-gray-900">{coin.name}</h1>
-                <div className="flex flex-wrap items-center gap-3 mt-2">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-5xl font-bold text-gray-900">{coin.name}</h1>
+                  <button
+                    onClick={toggleFavorite}
+                    className="text-3xl hover:scale-125 transition-transform"
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    {isFavorite ? '⭐' : '☆'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-2xl text-gray-600">{coin.symbol}</span>
                   {coin.cmc_rank && (
                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -168,15 +256,15 @@ export default function CoinDetail({ coin }) {
               </div>
             </div>
 
-            {/* Right */}
+            {/* Right - Price Info */}
             <div>
               {coin.price && (
                 <>
                   <p className="text-gray-600 text-sm font-medium mb-1">Current Price</p>
-                  <p className="text-5xl font-bold text-green-600">${coinPrice}</p>
+                  <p className="text-5xl font-bold text-green-600 mb-4">{coinPrice}</p>
                 </>
               )}
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-3 gap-4">
                 {[
                   { key: 'percent_change_1h', label: '1h' },
                   { key: 'percent_change_24h', label: '24h' },
@@ -184,37 +272,44 @@ export default function CoinDetail({ coin }) {
                 ].map(({ key, label }) =>
                   coin[key] !== null && coin[key] !== undefined ? (
                     <div key={key}>
-                      <p className="text-xs text-gray-500 mb-1">{label} Change</p>
+                      <p className="text-xs text-gray-500 mb-1">{label}</p>
                       <p
-                        className={`font-bold ${
+                        className={`font-bold text-lg ${
                           coin[key] >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {coin[key] >= 0 ? '+' : ''}
+                        {coin[key] >= 0 ? '▲' : '▼'}{' '}
                         {parseFloat(coin[key]).toFixed(2)}%
                       </p>
                     </div>
                   ) : null
                 )}
               </div>
+              {coin.last_updated && (
+                <p className="text-gray-500 text-xs mt-4">
+                  Last updated: {new Date(coin.last_updated).toLocaleString()}
+                </p>
+              )}
             </div>
           </div>
 
           {/* MARKET STATS */}
           {(coin.market_cap || coin.volume_24h) && (
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">Market Statistics</h2>
+              <h2 className="text-3xl font-bold mb-6 text-gray-900">📊 Market Statistics</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {coin.market_cap && (
                   <StatCard
                     label="Market Cap"
-                    value={`$${parseFloat(coin.market_cap).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    value={formatLargeNumber(coin.market_cap)}
+                    subtext={marketDominance ? `${marketDominance}% dominance` : null}
                   />
                 )}
                 {coin.volume_24h && (
                   <StatCard
                     label="24h Volume"
-                    value={`$${parseFloat(coin.volume_24h).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    value={formatLargeNumber(coin.volume_24h)}
+                    subtext={coin.market_cap ? `${((coin.volume_24h / coin.market_cap) * 100).toFixed(1)}% of market cap` : null}
                   />
                 )}
                 {coin.circulating_supply && (
@@ -222,7 +317,8 @@ export default function CoinDetail({ coin }) {
                     label="Circulating Supply"
                     value={`${parseFloat(coin.circulating_supply).toLocaleString(undefined, {
                       maximumFractionDigits: 0
-                    })} ${coin.symbol}`}
+                    })}`}
+                    subtext={coin.symbol}
                   />
                 )}
                 {coin.total_supply && (
@@ -230,7 +326,8 @@ export default function CoinDetail({ coin }) {
                     label="Total Supply"
                     value={`${parseFloat(coin.total_supply).toLocaleString(undefined, {
                       maximumFractionDigits: 0
-                    })} ${coin.symbol}`}
+                    })}`}
+                    subtext={coin.symbol}
                   />
                 )}
                 {coin.max_supply && (
@@ -238,10 +335,22 @@ export default function CoinDetail({ coin }) {
                     label="Max Supply"
                     value={`${parseFloat(coin.max_supply).toLocaleString(undefined, {
                       maximumFractionDigits: 0
-                    })} ${coin.symbol}`}
+                    })}`}
+                    subtext={coin.symbol}
                   />
                 )}
-                {coin.cmc_rank && <StatCard label="CoinMarketCap Rank" value={`#${coin.cmc_rank}`} />}
+                {coin.cmc_rank && (
+                  <StatCard 
+                    label="CoinMarketCap Rank" 
+                    value={`#${coin.cmc_rank}`}
+                  />
+                )}
+                {coin.num_market_pairs && (
+                  <StatCard 
+                    label="Trading Pairs" 
+                    value={coin.num_market_pairs}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -249,86 +358,16 @@ export default function CoinDetail({ coin }) {
           {/* ABOUT */}
           {coin.description && (
             <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">About {coin.name}</h2>
+              <h2 className="text-3xl font-bold mb-4 text-gray-900">ℹ️ About {coin.name}</h2>
               <p className="text-gray-700 leading-relaxed text-lg">{coin.description}</p>
+              {coin.date_added && (
+                <p className="text-gray-500 text-sm mt-4">
+                  Added to CoinMarketCap: {formatDate(coin.date_added)}
+                </p>
+              )}
             </div>
           )}
 
           {/* RESOURCES */}
           {(coin.urls_website || coin.urls_technical_doc || coin.urls_source_code || coin.urls_explorer) && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">Official Resources</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {parseUrls(coin.urls_website).length > 0 && (
-                  <SimpleLinkCard title="🌐 Website" urls={parseUrls(coin.urls_website)} />
-                )}
-                {parseUrls(coin.urls_technical_doc).length > 0 && (
-                  <SimpleLinkCard title="📄 Whitepaper" urls={parseUrls(coin.urls_technical_doc)} />
-                )}
-                {parseUrls(coin.urls_source_code).length > 0 && (
-                  <SimpleLinkCard title="💻 Source Code" urls={parseUrls(coin.urls_source_code)} />
-                )}
-                {parseUrls(coin.urls_explorer).length > 0 && (
-                  <SimpleLinkCard title="🔍 Block Explorers" urls={parseUrls(coin.urls_explorer)} numbered />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* SOCIAL */}
-          {(coin.urls_twitter || coin.urls_reddit || coin.urls_message_board) && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-              <h2 className="text-3xl font-bold mb-6 text-gray-900">Social & Community</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {parseUrls(coin.urls_twitter).length > 0 && (
-                  <SimpleLinkCard title="🐦 Twitter" urls={parseUrls(coin.urls_twitter)} />
-                )}
-                {parseUrls(coin.urls_reddit).length > 0 && (
-                  <SimpleLinkCard title="👽 Reddit" urls={parseUrls(coin.urls_reddit)} />
-                )}
-                {parseUrls(coin.urls_message_board).length > 0 && (
-                  <SimpleLinkCard title="📋 Message Board" urls={parseUrls(coin.urls_message_board)} />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────────
-   Helper Components
-──────────────────────────────────────────────── */
-function StatCard({ label, value }) {
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-4">
-      <p className="text-gray-600 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
-      <p className="font-semibold text-gray-900 text-base break-all">{value}</p>
-    </div>
-  );
-}
-
-function SimpleLinkCard({ title, urls, numbered = false }) {
-  if (!urls || urls.length === 0) return null;
-  const mainLink = urls[0];
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 border rounded-xl p-5 hover:shadow-md transition-shadow">
-      <h3 className="font-bold text-gray-900 mb-3 text-lg">
-        <a href={mainLink} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-700">
-          {title}
-        </a>
-      </h3>
-      {numbered && (
-        <p className="text-sm text-blue-600 flex flex-wrap gap-2">
-          {urls.map((url, i) => (
-            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-              [{i + 1}]
-            </a>
-          ))}
-        </p>
-      )}
-    </div>
-  );
-}
+            <div className="bg-white
