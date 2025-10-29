@@ -67,6 +67,19 @@ export async function getServerSideProps(context) {
 
   const categoryName = coinsData[0]?.category_name || slug;
 
+  // ✅ ADD THIS: Fetch logos from coins_meta table
+  const coinIds = coinsData.map(c => c.coin_id);
+  const { data: metaData } = await supabase
+    .from('coins_meta')
+    .select('id, logo')
+    .in('id', coinIds);
+
+  // Create a map for quick lookup
+  const metaMap = {};
+  (metaData || []).forEach(meta => {
+    metaMap[meta.id] = meta;
+  });
+
   // Get total count for pagination
   const { count } = await supabase
     .from('coin_categories')
@@ -98,6 +111,7 @@ export async function getServerSideProps(context) {
       .slice(0, 5),
   };
 
+  // ✅ UPDATED: Map coins with logos from metaMap
   const coins = coinsData.map(coin => ({
     id: coin.coin_id,
     name: coin.name,
@@ -108,7 +122,7 @@ export async function getServerSideProps(context) {
     chg_24h: coin.percent_change_24h,
     volume_24h: coin.volume_24h,
     market_cap: coin.market_cap,
-    logo: null,
+    logo: metaMap[coin.coin_id]?.logo || null,  // ✅ Now fetches logos!
   }));
 
   return {
@@ -122,7 +136,6 @@ export async function getServerSideProps(context) {
     },
   };
 }
-
 // ───────────────────────────────
 // Category Page Component
 // ───────────────────────────────
