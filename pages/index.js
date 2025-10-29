@@ -96,11 +96,6 @@ export default function Home({ coins, page, totalCount }) {
     router.push(`/?page=${newPage}`);
   };
 
-  // Route to /coins/{SYMBOL}-{ID} for unique identification
-  const getCoinUrl = (coin) => {
-    return `/coins/${coin.symbol}-${coin.id}`;
-  };
-
   return (
     <>
       <Head>
@@ -109,7 +104,7 @@ export default function Home({ coins, page, totalCount }) {
           name="description"
           content="View the top 100 cryptocurrencies by market cap. Track live prices, rank, and 24h performance updates."
         />
-        <link rel="canonical" href="https://crypto-search2.vercel.app/" />
+        <link rel="canonical" href="https://www.01x2.com/" />
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-10">
@@ -166,7 +161,7 @@ export default function Home({ coins, page, totalCount }) {
                     <tr
                       key={coin.id}
                       className="border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all cursor-pointer"
-                      onClick={() => router.push(getCoinUrl(coin))}
+                      onClick={() => router.push(`/coins/${coin.symbol}`)}
                     >
                       <td className="px-6 py-4 text-gray-600 font-medium">{coin.rank}</td>
                       <td className="px-6 py-4 flex items-center gap-3">
