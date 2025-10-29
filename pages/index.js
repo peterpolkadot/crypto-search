@@ -571,54 +571,62 @@ export default function Home({ coins, page, totalCount, stats }) {
     </>
   );
 }
-
 /* ────────────────────────────────────────────────
    Mini Stats Table Component
 ──────────────────────────────────────────────── */
 function MiniStatsTable({ title, coins, highlightKey, router }) {
-  const formatValue = (coin, key) => {
-    if (key === 'percent_change_24h') {
-      const val = parseFloat(coin[key]);
-      return (
-        <span className={val >= 0 ? 'text-green-600' : 'text-red-600'}>
-          {val >= 0 ? '▲' : '▼'} {val.toFixed(2)}%
-        </span>
-      );
-    }
-    if (key === 'volume_24h' || key === 'market_cap') {
-      return formatLargeNumber(coin[key]);
-    }
-    return coin[key];
-  };
-
   const formatLargeNumber = (num) => {
     if (!num) return 'N/A';
     const value = parseFloat(num);
     
-    if (value >= 1e9) {
+    if (value >= 1e12) {
+      return `$${(value / 1e12).toFixed(2)}T`;
+    } else if (value >= 1e9) {
       return `$${(value / 1e9).toFixed(2)}B`;
     } else if (value >= 1e6) {
       return `$${(value / 1e6).toFixed(2)}M`;
+    } else if (value >= 1e3) {
+      return `$${(value / 1e3).toFixed(2)}K`;
     } else {
-      return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+      return `$${value.toFixed(2)}`;
     }
+  };
+
+  const formatValue = (coin, key) => {
+    if (key === 'percent_change_24h') {
+      const val = parseFloat(coin[key]);
+      return (
+        <span className={`font-bold ${val >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {val >= 0 ? '▲' : '▼'} {Math.abs(val).toFixed(2)}%
+        </span>
+      );
+    }
+    if (key === 'volume_24h' || key === 'market_cap') {
+      return <span className="font-bold text-gray-900">{formatLargeNumber(coin[key])}</span>;
+    }
+    return coin[key];
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-shadow">
-      <h3 className="text-sm font-bold text-gray-900 mb-3">{title}</h3>
+      <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-2">{title}</h3>
       <div className="space-y-2">
         {coins.map((coin, idx) => (
           <div
             key={coin.id}
             onClick={() => router.push(`/coins/${coin.symbol}`)}
-            className="flex items-center justify-between p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all"
+            className="flex items-center justify-between p-2 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all group"
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-gray-400 text-xs font-medium">{idx + 1}</span>
-              <span className="text-gray-900 font-medium text-sm truncate">{coin.symbol}</span>
+              <span className="text-gray-400 text-xs font-medium w-4">{idx + 1}</span>
+              <span className="text-gray-900 font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                {coin.symbol}
+              </span>
+              <span className="text-gray-500 text-xs truncate hidden sm:inline">
+                {coin.name}
+              </span>
             </div>
-            <div className="text-right text-xs font-bold">
+            <div className="text-right text-xs ml-2">
               {formatValue(coin, highlightKey)}
             </div>
           </div>
