@@ -34,7 +34,6 @@ export default function Header() {
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <span className="text-3xl">💰</span>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
@@ -42,7 +41,6 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/"
@@ -53,7 +51,6 @@ export default function Header() {
               Home
             </Link>
 
-            {/* Categories Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setCategoriesOpen(!categoriesOpen)}
@@ -71,7 +68,6 @@ export default function Header() {
                 </svg>
               </button>
 
-              {/* Dropdown Menu */}
               {categoriesOpen && (
                 <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 w-64 max-h-96 overflow-y-auto">
                   {categories.map((cat) => (
@@ -88,18 +84,8 @@ export default function Header() {
                 </div>
               )}
             </div>
-
-            
-              href="https://github.com/peterpolkadot/crypto-search"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            >
-              GitHub
-            </a>
           </nav>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden text-gray-700 hover:text-blue-600 transition-colors"
@@ -114,7 +100,6 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <Link
@@ -125,7 +110,6 @@ export default function Header() {
               Home
             </Link>
 
-            {/* Mobile Categories */}
             <div className="py-2">
               <p className="text-gray-500 text-sm font-semibold mb-2">Categories</p>
               <div className="grid grid-cols-2 gap-2">
@@ -142,16 +126,6 @@ export default function Header() {
                 ))}
               </div>
             </div>
-
-            
-              href="https://github.com/peterpolkadot/crypto-search"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              GitHub
-            </a>
           </div>
         )}
       </div>
