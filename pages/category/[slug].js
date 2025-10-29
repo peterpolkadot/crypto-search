@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 
 // ───────────────────────────────
 // Helper Functions
@@ -109,7 +108,7 @@ export async function getServerSideProps(context) {
     chg_24h: coin.percent_change_24h,
     volume_24h: coin.volume_24h,
     market_cap: coin.market_cap,
-    logo: null, // Categories endpoint doesn't include logos
+    logo: null,
   }));
 
   return {
@@ -281,9 +280,12 @@ export default function CategoryPage({ coins, categoryName, categorySlug, page, 
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Category Not Found</h1>
           <p className="text-gray-600 mb-6">This category doesn't exist or has no coins</p>
-          <Link href="/" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all">
+          <button 
+            onClick={() => router.push('/')}
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all"
+          >
             Back to Home
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -303,16 +305,6 @@ export default function CategoryPage({ coins, categoryName, categorySlug, page, 
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-10">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Breadcrumb */}
-          <div className="mb-6">
-            <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 transition-all w-fit">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
-
           {/* Header */}
           <div className="text-center mb-10">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
@@ -566,7 +558,7 @@ export default function CategoryPage({ coins, categoryName, categorySlug, page, 
 
           {/* Footer */}
           <div className="text-center mt-12 text-gray-500 text-sm">
-            <p>Category data updated weekly • <Link href="/" className="text-blue-600 hover:underline">View all categories</Link></p>
+            <p>Category data updated weekly</p>
           </div>
         </div>
       </div>
