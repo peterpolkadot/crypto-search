@@ -12,9 +12,9 @@ export async function getServerSideProps(context) {
   const offset = (page - 1) * limit;
 
   const { data: coins, error } = await supabase
-    .from('coins')
+   .from('coin_full')
     .select('*')
-    .order('rank', { ascending: true })
+    .order('market_cap', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
@@ -23,7 +23,7 @@ export async function getServerSideProps(context) {
   }
 
   const { count } = await supabase
-    .from('coins')
+   .from('coin_full')
     .select('*', { count: 'exact', head: true });
 
   return {
