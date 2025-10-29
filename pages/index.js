@@ -88,31 +88,52 @@ export async function getServerSideProps(context) {
   }));
 
   // Fetch stats data (top gainers, losers, etc.)
-  const { data: allCoins } = await supabase
-    .from('coins')
-    .select('id, name, symbol, slug, price, percent_change_24h, volume_24h, market_cap, cmc_rank')
-    .not('cmc_rank', 'is', null)
-    .not('percent_change_24h', 'is', null)
-    .not('volume_24h', 'is', null)
-    .limit(500); // Get top 500 for stats
+// Fetch stats data (top gainers, losers, etc.)
+// Get MORE coins and filter better for accurate stats
+const { data: allCoins } = await supabase
+  .from('coins')
+  .select('id, name, symbol, slug, price, percent_change_24h, volume_24h, market_cap, cmc_rank')
+  .not('cmc_rank', 'is', null)
+  .lte('cmc_rank', 1000) // Only top 1000 coins
+  .order('cmc_rank', { ascending: true });
 
-  const stats = {
-    topGainers: (allCoins || [])
-      .filter(c => c.percent_change_24h > 0)
-      .sort((a, b) => b.percent_change_24h - a.percent_change_24h)
-      .slice(0, 5),
-    topLosers: (allCoins || [])
-      .filter(c => c.percent_change_24h < 0)
-      .sort((a, b) => a.percent_change_24h - b.percent_change_24h)
-      .slice(0, 5),
-    topVolume: (allCoins || [])
-      .sort((a, b) => b.volume_24h - a.volume_24h)
-      .slice(0, 5),
-    topMarketCap: (allCoins || [])
-      .sort((a, b) => b.market_cap - a.market_cap)
-      .slice(0, 5),
-  };
-
+const stats = {
+  topGainers: (allCoins || [])
+    .filter(c => 
+      c.percent_change_24h !== null && 
+      c.percent_change_24h > 0 &&
+      c.market_cap !== null &&
+      parseFloat(c.market_cap) > 1e8 // Filter out tiny coins (>100M market cap)
+    )
+    .sort((a, b) => b.percent_change_24h - a.percent_change_24h)
+    .slice(0, 5),
+    
+  topLosers: (allCoins || [])
+    .filter(c => 
+      c.percent_change_24h !== null && 
+      c.percent_change_24h < 0 &&
+      c.market_cap !== null &&
+      parseFloat(c.market_cap) > 1e8 // Filter out tiny coins
+    )
+    .sort((a, b) => a.percent_change_24h - b.percent_change_24h)
+    .slice(0, 5),
+    
+  topVolume: (allCoins || [])
+    .filter(c => 
+      c.volume_24h !== null && 
+      c.volume_24h > 0
+    )
+    .sort((a, b) => parseFloat(b.volume_24h) - parseFloat(a.volume_24h))
+    .slice(0, 5),
+    
+  topMarketCap: (allCoins || [])
+    .filter(c => 
+      c.market_cap !== null && 
+      c.market_cap > 0
+    )
+    .sort((a, b) => parseFloat(b.market_cap) - parseFloat(a.market_cap))
+    .slice(0, 5),
+};
   const { count } = await supabase
     .from('coins')
     .select('*', { count: 'exact', head: true })
