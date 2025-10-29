@@ -52,7 +52,7 @@ export async function getServerSideProps(context) {
     .select('id, logo, description')
     .in('id', coinIds);
 
-  // Create a map for quick lookup
+  // Create a map for quick lookup ok
   const metaMap = {};
   (metaData || []).forEach(meta => {
     metaMap[meta.id] = meta;
