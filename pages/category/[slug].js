@@ -67,7 +67,7 @@ export async function getServerSideProps(context) {
 
   const categoryName = coinsData[0]?.category_name || slug;
 
-  // ✅ ADD THIS: Fetch logos from coins_meta table
+  // Fetch logos from coins_meta table
   const coinIds = coinsData.map(c => c.coin_id);
   const { data: metaData } = await supabase
     .from('coins_meta')
@@ -111,7 +111,7 @@ export async function getServerSideProps(context) {
       .slice(0, 5),
   };
 
-  // ✅ UPDATED: Map coins with logos from metaMap
+  // Map coins with logos from metaMap
   const coins = coinsData.map(coin => ({
     id: coin.coin_id,
     name: coin.name,
@@ -122,7 +122,7 @@ export async function getServerSideProps(context) {
     chg_24h: coin.percent_change_24h,
     volume_24h: coin.volume_24h,
     market_cap: coin.market_cap,
-    logo: metaMap[coin.coin_id]?.logo || null,  // ✅ Now fetches logos!
+    logo: metaMap[coin.coin_id]?.logo || null,
   }));
 
   return {
@@ -136,6 +136,7 @@ export async function getServerSideProps(context) {
     },
   };
 }
+
 // ───────────────────────────────
 // Category Page Component
 // ───────────────────────────────
@@ -394,9 +395,13 @@ export default function CategoryPage({ coins, categoryName, categorySlug, page, 
                     }}
                     className="px-6 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer flex items-center gap-3 border-b transition-all"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                      {coin.symbol?.substring(0, 2) || '?'}
-                    </div>
+                    {coin.logo ? (
+                      <img src={coin.logo} alt={coin.name} className="w-8 h-8 rounded-full" loading="lazy" />
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                        {coin.symbol?.substring(0, 2) || '?'}
+                      </div>
+                    )}
                     <div className="flex-1">
                       <span className="font-semibold text-gray-900">{coin.name}</span>
                       <span className="text-gray-500 text-sm ml-2">{coin.symbol}</span>
@@ -480,9 +485,21 @@ export default function CategoryPage({ coins, categoryName, categorySlug, page, 
                         <td className="px-4 py-4 text-gray-600 font-medium">{coin.rank}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                              {coin.symbol?.substring(0, 2) || '?'}
-                            </div>
+                            {coin.logo ? (
+                              <img
+                                src={coin.logo}
+                                alt={coin.name}
+                                className="w-8 h-8 rounded-full"
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                {coin.symbol?.substring(0, 2) || '?'}
+                              </div>
+                            )}
                             <div className="flex flex-col">
                               <span className="text-gray-900 font-semibold hover:text-blue-600 transition-all">
                                 {coin.name}
