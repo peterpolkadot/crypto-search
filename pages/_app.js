@@ -1,15 +1,8 @@
-import '../styles/globals.css'
-import Head from 'next/head'
+import '../styles/globals.css';
+import Head from 'next/head';
 import { Analytics } from '@vercel/analytics/react';
+import Header from '../components/Header';
 
-function MyApp({ Component, pageProps }) {
-  return (
-    <>
-      <Component {...pageProps} />
-      <Analytics />
-    </>
-  );
-}
 export default function App({ Component, pageProps }) {
   return (
     <>
@@ -21,16 +14,19 @@ export default function App({ Component, pageProps }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta property="og:title" content="Crypto Search - Live Cryptocurrency Prices & Data" />
         <meta property="og:description" content="Search and track live cryptocurrency prices for Bitcoin, Ethereum, Solana and thousands more. Get real-time crypto data and detailed coin information." />
-        <meta property="og:url" content="https://crypto-search2.vercel.app/" />
+        <meta property="og:url" content="https://www.01x2.com/" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://crypto-search2.vercel.app/og-image.png" />
+        <meta property="og:image" content="https://www.01x2.com/og-image.png" />
         <meta property="og:image:alt" content="Crypto Search" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" content="Crypto Search" />
       </Head>
+      
+      <Header />
       <Component {...pageProps} />
+      <Analytics />
     </>
-  )
+  );
 }
